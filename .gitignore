@@ -1,9 +1,13 @@
-# Dependencies
-.psci_modules
-.spago
-bower_components
-node_modules
-
-# Generated files
-.psci
-output
+node_modules/
+.expo/
+.expo-shared/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+.DS_Store

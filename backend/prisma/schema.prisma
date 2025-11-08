@@ -1,0 +1,118 @@
+// Prisma Schema - Matix Oyunu Veritabanı Modeli
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Kullanıcılar
+model User {
+  id          String   @id @default(uuid())
+  email       String?  @unique // Email (kayıtlı kullanıcılar için)
+  password    String?  // Hashed password (kayıtlı kullanıcılar için)
+  nickname    String   @unique
+  avatar      String
+  totalScore  Int      @default(0)
+  isGuest     Boolean  @default(false) // Misafir kullanıcı mı?
+  lastLogin   DateTime? // Son giriş tarihi
+  createdAt   DateTime @default(now())
+
+  // İlişkiler
+  hostedRooms    Room[]               @relation("HostUser")
+  roomParticipants RoomParticipant[]
+  sentFriendRequests    Friendship[]   @relation("Requester")
+  receivedFriendRequests Friendship[]   @relation("Receiver")
+  sentInvitations        RoomInvitation[] @relation("Inviter")
+  receivedInvitations    RoomInvitation[] @relation("Invitee")
+
+  @@map("users")
+}
+
+// Oyun Odaları
+model Room {
+  id        String   @id @default(uuid())
+  code      String   @unique // Oda kodu (örn: ABC123)
+  hostId    String
+  isActive  Boolean  @default(true)
+  isPrivate Boolean  @default(false) // Private room mu?
+  ageGroup  String?  // Yaş grubu (age4, age5, grade1, vb.)
+  createdAt DateTime @default(now())
+
+  // İlişkiler
+  host         User             @relation("HostUser", fields: [hostId], references: [id], onDelete: Cascade)
+  participants RoomParticipant[]
+  gameSessions GameSession[]
+  invitations  RoomInvitation[]  // Private room davetleri
+
+  @@map("rooms")
+}
+
+// Oda Katılımcıları
+model RoomParticipant {
+  id     String @id @default(uuid())
+  roomId String
+  userId String
+  score  Int    @default(0)
+
+  // İlişkiler
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@map("room_participants")
+}
+
+// Oyun Oturumları
+model GameSession {
+  id           String   @id @default(uuid())
+  roomId       String
+  questionText String
+  correctAnswer String
+  createdAt    DateTime @default(now())
+  finished     Boolean  @default(false)
+
+  // İlişkiler
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@map("game_sessions")
+}
+
+// Arkadaşlık İlişkileri
+model Friendship {
+  id          String   @id @default(uuid())
+  requesterId String   // İstek gönderen
+  receiverId  String   // İstek alan
+  status      String   @default("pending") // pending, accepted, rejected
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // İlişkiler
+  requester User @relation("Requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  receiver User @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, receiverId])
+  @@map("friendships")
+}
+
+// Private Room Davetleri
+model RoomInvitation {
+  id        String   @id @default(uuid())
+  roomId    String
+  inviterId String   // Davet gönderen
+  inviteeId String   // Davet alan
+  status    String   @default("pending") // pending, accepted, rejected
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // İlişkiler
+  room    Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  inviter User @relation("Inviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee User @relation("Invitee", fields: [inviteeId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, inviteeId])
+  @@map("room_invitations")
+}
+
