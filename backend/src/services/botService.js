@@ -85,11 +85,14 @@ function getBotAnswer(difficulty, correctAnswer, options) {
 async function createBotUser(bot) {
   try {
     // Bot kullanıcısını oluştur (isGuest = true, bot olduğunu belirtmek için)
-    const user = await userService.createUser(bot.nickname, bot.avatar, true);
+    // Unique nickname için timestamp ekle
+    const uniqueNickname = `${bot.nickname} ${Date.now()}`;
+    const user = await userService.createUser(uniqueNickname, bot.avatar, true);
     return user;
   } catch (error) {
-    // Eğer bot ismi zaten varsa, biraz değiştir
-    const modifiedName = `${bot.nickname} ${Math.floor(Math.random() * 1000)}`;
+    // Eğer hala hata varsa, UUID benzeri bir string ekle
+    const randomId = Math.random().toString(36).substring(2, 9);
+    const modifiedName = `${bot.nickname} ${Date.now()}-${randomId}`;
     const user = await userService.createUser(modifiedName, bot.avatar, true);
     return user;
   }
@@ -150,7 +153,8 @@ async function addBotToRoom(io, roomCode, bot, activeGames) {
             setTimeout(async () => {
               // Soruyu gönder
               const { generateQuestion } = require('../utils/gameLogic');
-              const question = generateQuestion(room.ageGroup || 'grade1');
+              const difficultyLevel = room.difficultyLevel || 0;
+              const question = generateQuestion(room.ageGroup || 'grade1', difficultyLevel);
               
               // Oyun durumunu güncelle
               activeGames.get(roomCode).currentQuestion = question;
@@ -345,8 +349,14 @@ async function handleBotAnswer(io, roomCode, botUserId, botAnswer, correctAnswer
     } else {
       // Oyun bitti
       console.log(`🏁 Bot: Oyun bitti: ${roomCode}`);
-      const { finishGame } = require('../socket/socketHandler');
-      await finishGame(io, roomCode);
+      // finishGame fonksiyonunu socketHandler'dan al
+      const socketHandler = require('../socket/socketHandler');
+      const finishGameFn = socketHandler.getFinishGame();
+      if (finishGameFn) {
+        await finishGameFn(io, roomCode);
+      } else {
+        console.error('❌ finishGame fonksiyonu bulunamadı');
+      }
     }
   } else {
     console.log(`⏳ Bot: Henüz tüm oyuncular cevap vermedi, bekleniyor: ${roomCode}`);

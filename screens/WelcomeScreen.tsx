@@ -8,10 +8,12 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useGame } from '../contexts/GameContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export const WelcomeScreen: React.FC = () => {
   const navigation = useNavigation();
   const { clearAllData } = useGame();
+  const { t } = useLanguage();
 
   // Uygulama açıldığında storage'ı temizle (geliştirme için)
   React.useEffect(() => {
@@ -36,8 +38,8 @@ export const WelcomeScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>🎮 Matix</Text>
-          <Text style={styles.subtitle}>Matematik Yarışması</Text>
+          <Text style={styles.title}>🎮 {t('welcome.title')}</Text>
+          <Text style={styles.subtitle}>{t('welcome.subtitle')}</Text>
         </View>
 
         <View style={styles.buttonContainer}>
@@ -45,26 +47,26 @@ export const WelcomeScreen: React.FC = () => {
             style={[styles.button, styles.primaryButton]}
             onPress={handleRegister}
           >
-            <Text style={styles.primaryButtonText}>Kayıt Ol</Text>
+            <Text style={styles.primaryButtonText}>{t('welcome.register')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.button, styles.secondaryButton]}
             onPress={handleLogin}
           >
-            <Text style={styles.secondaryButtonText}>Giriş Yap</Text>
+            <Text style={styles.secondaryButtonText}>{t('welcome.login')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.button, styles.guestButton]}
             onPress={handleGuestMode}
           >
-            <Text style={styles.guestButtonText}>Misafir olarak devam et</Text>
+            <Text style={styles.guestButtonText}>{t('welcome.continueAsGuest')}</Text>
           </TouchableOpacity>
         </View>
 
         <Text style={styles.infoText}>
-          Kayıt olarak skorlarınızı kaydedebilir ve liderlik tablosunda yer alabilirsiniz!
+          {t('welcome.info')}
         </Text>
       </View>
     </SafeAreaView>

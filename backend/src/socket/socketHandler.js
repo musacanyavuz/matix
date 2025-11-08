@@ -218,6 +218,7 @@ function setupSocketHandlers(io) {
                     isBot: false,
                   })),
                   ageGroup: room.ageGroup || 'grade1',
+                  difficultyLevel: room.difficultyLevel || 0,
                 });
 
                 // Skorları sıfırla
@@ -312,6 +313,7 @@ function setupSocketHandlers(io) {
             isBot: p.user.nickname.includes('Bot'), // Bot kontrolü
           })),
           ageGroup: room.ageGroup || 'grade1',
+          difficultyLevel: room.difficultyLevel || 0,
         });
         
         // Bot varsa bot bilgilerini ekle
@@ -356,7 +358,8 @@ function setupSocketHandlers(io) {
         questionTimers.delete(roomCode);
       }
 
-      const question = generateQuestion(gameState.ageGroup);
+      const difficultyLevel = gameState.difficultyLevel || 0;
+      const question = generateQuestion(gameState.ageGroup, difficultyLevel);
       gameState.currentQuestion = question;
       gameState.answers = {};
 
@@ -597,6 +600,8 @@ function setupSocketHandlers(io) {
      * Oyunu bitir
      */
     async function finishGame(io, roomCode) {
+      // Export için kaydet (botService'den çağrılabilmesi için)
+      exportedFinishGame = finishGame;
       const gameState = activeGames.get(roomCode);
       if (!gameState) return;
 
@@ -859,6 +864,7 @@ function getActiveGames() {
 
 // sendQuestion fonksiyonunu export et (botService için)
 let exportedSendQuestion = null;
+let exportedFinishGame = null;
 
 function setSendQuestion(sendQuestionFn) {
   exportedSendQuestion = sendQuestionFn;
@@ -868,9 +874,19 @@ function getSendQuestion() {
   return exportedSendQuestion;
 }
 
+function setFinishGame(finishGameFn) {
+  exportedFinishGame = finishGameFn;
+}
+
+function getFinishGame() {
+  return exportedFinishGame;
+}
+
 module.exports = setupSocketHandlers;
 module.exports.getActiveGames = getActiveGames;
 module.exports.setSendQuestion = setSendQuestion;
 module.exports.getSendQuestion = getSendQuestion;
+module.exports.setFinishGame = setFinishGame;
+module.exports.getFinishGame = getFinishGame;
 module.exports.questionTimers = questionTimers;
 

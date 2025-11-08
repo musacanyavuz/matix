@@ -13,7 +13,7 @@ class RoomController {
    */
   async createRoom(req, res, next) {
     try {
-      const { hostId, ageGroup, isPrivate } = req.body;
+      const { hostId, ageGroup, isPrivate, difficultyLevel } = req.body;
 
       if (!hostId) {
         return res.status(400).json({
@@ -31,7 +31,12 @@ class RoomController {
         });
       }
 
-      const room = await roomService.createRoom(hostId, ageGroup, isPrivate || false);
+      // Zorluk seviyesi validasyonu (-1, 0, 1)
+      const validDifficultyLevel = difficultyLevel !== undefined && [-1, 0, 1].includes(parseInt(difficultyLevel))
+        ? parseInt(difficultyLevel)
+        : 0;
+
+      const room = await roomService.createRoom(hostId, ageGroup, isPrivate || false, validDifficultyLevel);
 
       res.status(201).json({
         success: true,

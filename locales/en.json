@@ -1,0 +1,122 @@
+{
+  "welcome": {
+    "title": "Matix",
+    "subtitle": "Math Competition",
+    "info": "Register to save your scores and appear on the leaderboard!",
+    "continueAsGuest": "Continue as Guest",
+    "register": "Register",
+    "login": "Login"
+  },
+  "register": {
+    "title": "Register",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "nickname": "Username",
+    "avatar": "Avatar",
+    "ageGroup": "Age Group",
+    "terms": "I accept the terms of use",
+    "register": "Register",
+    "alreadyHaveAccount": "Already have an account? Login"
+  },
+  "login": {
+    "title": "Login",
+    "email": "Email",
+    "password": "Password",
+    "login": "Login",
+    "forgotPassword": "Forgot Password",
+    "noAccount": "Don't have an account? Register"
+  },
+  "room": {
+    "title": "Join Room",
+    "createRoom": "Create Room",
+    "joinRoom": "Join Room",
+    "roomCode": "Room Code",
+    "enterCode": "Enter Code",
+    "activeRooms": "Active Rooms",
+    "noRooms": "No active rooms",
+    "players": "Player",
+    "waiting": "Waiting",
+    "profile": "Profile",
+    "leaderboard": "Leaderboard",
+    "difficultyLevel": "Difficulty Level",
+    "easy": "Easy",
+    "normal": "Normal",
+    "hard": "Hard"
+  },
+  "game": {
+    "title": "Game",
+    "question": "Question",
+    "selectAnswer": "Select Your Answer",
+    "correct": "Correct!",
+    "wrong": "Wrong!",
+    "score": "Score",
+    "home": "Home",
+    "exitGame": "Exit Game",
+    "exitConfirm": "Are you sure you want to exit the game?",
+    "cancel": "Cancel",
+    "confirm": "Yes",
+    "loading": "Preparing question..."
+  },
+  "countdown": {
+    "gameStart": "🎮 Game Starting",
+    "nextQuestion": "📝 New Question"
+  },
+  "result": {
+    "title": "Results",
+    "gameOver": "Game Over!",
+    "congratulations": "Congratulations!",
+    "youWon": "You Won! 🎉",
+    "niceGame": "Nice Game!",
+    "winner": "Winner",
+    "yourScore": "Your Score",
+    "playAgain": "Play Again",
+    "goHome": "Go Home",
+    "finalScores": "Final Scores",
+    "winnerBadge": "Winner"
+  },
+  "profile": {
+    "title": "Profile",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "logout": "Logout",
+    "stats": "Statistics",
+    "totalScore": "Total Score",
+    "totalGames": "Total Games",
+    "winRate": "Win Rate",
+    "rank": "Rank",
+    "viewLeaderboard": "View Leaderboard",
+    "convertToUser": "Convert to Account",
+    "guest": "Guest User",
+    "language": "Language"
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "yourRank": "Your Rank",
+    "points": "Points"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "ok": "OK",
+    "yes": "Yes",
+    "no": "No",
+    "back": "Back"
+  },
+  "ageGroups": {
+    "age4": "Age 4",
+    "age5": "Age 5",
+    "age6": "Age 6",
+    "grade1": "Grade 1",
+    "grade2": "Grade 2",
+    "grade3": "Grade 3",
+    "grade4": "Grade 4"
+  },
+  "countdown": {
+    "gameStart": "Game Starting",
+    "nextQuestion": "Next Question"
+  }
+}
+

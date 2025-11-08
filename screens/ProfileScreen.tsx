@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useGame } from '../contexts/GameContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { AvatarSelector } from '../components/AvatarSelector';
 import { AgeGroupSelector } from '../components/AgeGroupSelector';
 import { Button } from '../components/Button';
@@ -30,6 +31,7 @@ interface UserStats {
 
 export const ProfileScreen: React.FC = () => {
   const { user, setUser, userId, isAuthenticated, token, logout, convertGuestToUser } = useGame();
+  const { language, setLanguage, t } = useLanguage();
   const navigation = useNavigation();
   const [nickname, setNickname] = useState(user?.nickname || '');
   const [selectedAvatar, setSelectedAvatar] = useState(user?.avatar || '🐱');
@@ -160,11 +162,16 @@ export const ProfileScreen: React.FC = () => {
         }
         
         // Local storage'a kaydet (userId ile birlikte, backend bağlantısı olsa da olmasa da)
-        await setUser({
-          nickname: nickname.trim(),
-          avatar: selectedAvatar,
-          ageGroup: selectedAgeGroup,
-        }, guestUserId || null);
+        try {
+          await setUser({
+            nickname: nickname.trim(),
+            avatar: selectedAvatar,
+            ageGroup: selectedAgeGroup,
+          }, guestUserId || null);
+        } catch (setUserError) {
+          console.error('setUser hatası:', setUserError);
+          // setUser hatası olsa bile devam et
+        }
       }
 
       setIsEditing(false);
@@ -175,6 +182,7 @@ export const ProfileScreen: React.FC = () => {
         Alert.alert('Başarılı', 'Profil güncellendi!');
       }
     } catch (error) {
+      console.error('Profil kaydetme hatası:', error);
       Alert.alert('Hata', error instanceof Error ? error.message : 'Profil kaydedilemedi.');
     } finally {
       setLoading(false);
@@ -479,13 +487,36 @@ export const ProfileScreen: React.FC = () => {
             </View>
           )}
 
+          {/* Dil Seçimi */}
+          <View style={styles.languageContainer}>
+            <Text style={styles.languageLabel}>{t('profile.language') || 'Dil'}</Text>
+            <View style={styles.languageButtons}>
+              <TouchableOpacity
+                style={[styles.languageButton, language === 'tr' && styles.languageButtonActive]}
+                onPress={() => setLanguage('tr')}
+              >
+                <Text style={[styles.languageButtonText, language === 'tr' && styles.languageButtonTextActive]}>
+                  🇹🇷 Türkçe
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.languageButton, language === 'en' && styles.languageButtonActive]}
+                onPress={() => setLanguage('en')}
+              >
+                <Text style={[styles.languageButtonText, language === 'en' && styles.languageButtonTextActive]}>
+                  🇬🇧 English
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* Çıkış Yap butonu (kayıtlı kullanıcılar için) */}
           {isAuthenticated && (
             <TouchableOpacity
               style={styles.logoutButton}
               onPress={handleLogout}
             >
-              <Text style={styles.logoutButtonText}>Çıkış Yap</Text>
+              <Text style={styles.logoutButtonText}>{t('profile.logout')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -696,5 +727,40 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  languageContainer: {
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  languageLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 10,
+  },
+  languageButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  languageButton: {
+    flex: 1,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    padding: 15,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  languageButtonActive: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  languageButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  languageButtonTextActive: {
+    color: '#fff',
   },
 });

@@ -17,7 +17,7 @@ class RoomService {
   /**
    * Yeni oda oluştur
    */
-  async createRoom(hostId, ageGroup = null, isPrivate = false) {
+  async createRoom(hostId, ageGroup = null, isPrivate = false, difficultyLevel = 0) {
     let code;
     let isUnique = false;
 
@@ -38,6 +38,7 @@ class RoomService {
         hostId,
         isPrivate: isPrivate,
         ageGroup,
+        difficultyLevel: difficultyLevel || 0,
       },
       include: {
         host: {
@@ -187,7 +188,7 @@ class RoomService {
   /**
    * Private room oluştur
    */
-  async createPrivateRoom(hostId, ageGroup = null) {
+  async createPrivateRoom(hostId, ageGroup = null, difficultyLevel = 0) {
     const roomCode = this.generateRoomCode();
     const room = await prisma.room.create({
       data: {
@@ -196,6 +197,7 @@ class RoomService {
         isActive: true,
         isPrivate: true,
         ageGroup,
+        difficultyLevel: difficultyLevel || 0,
       },
       include: {
         host: {

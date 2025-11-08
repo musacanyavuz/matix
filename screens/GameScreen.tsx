@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useGame } from '../contexts/GameContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { Countdown } from '../components/Countdown';
 
 export const GameScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { t } = useLanguage();
   const {
     user,
     players,
@@ -26,12 +28,12 @@ export const GameScreen: React.FC = () => {
 
   const handleExitGame = () => {
     Alert.alert(
-      'Anasayfaya Dön',
-      'Anasayfaya dönmek istediğinize emin misiniz? Oyun kaydedilmeyecek.',
+      t('game.home'),
+      t('game.exitConfirm'),
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: t('game.cancel'), style: 'cancel' },
         {
-          text: 'Anasayfaya Dön',
+          text: t('game.home'),
           style: 'default',
           onPress: () => {
             resetGame();
@@ -63,11 +65,28 @@ export const GameScreen: React.FC = () => {
   // Oyuncuları skora göre sırala
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 
+  // Oyun başlangıç geri sayımı gösteriliyorsa
+  if (showGameStartCountdown) {
+    return (
+      <View style={styles.container}>
+        <Countdown
+          duration={5}
+          onComplete={() => {
+            setShowGameStartCountdown(false);
+            // Geri sayım bittiğinde soru gelene kadar loading göster
+          }}
+          message={t('countdown.gameStart')}
+        />
+      </View>
+    );
+  }
+
+  // Soru yoksa ve geri sayım da yoksa loading göster
   if (!currentQuestion) {
     return (
       <View style={styles.container}>
         <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.loadingText}>Soru hazırlanıyor...</Text>
+        <Text style={styles.loadingText}>{t('game.loading')}</Text>
       </View>
     );
   }
@@ -76,7 +95,7 @@ export const GameScreen: React.FC = () => {
     <View style={styles.container}>
       {/* Anasayfaya dönüş butonu */}
       <TouchableOpacity style={styles.exitButton} onPress={handleExitGame}>
-        <Text style={styles.exitButtonText}>🏠 Anasayfa</Text>
+        <Text style={styles.exitButtonText}>🏠 {t('game.home')}</Text>
       </TouchableOpacity>
 
       {/* Geri sayım overlay (arka plan silik kalır) */}
@@ -85,7 +104,7 @@ export const GameScreen: React.FC = () => {
           <Countdown
             duration={2}
             onComplete={() => setShowQuestionCountdown(false)}
-            message="📝 Yeni Soru"
+            message={t('countdown.nextQuestion')}
           />
         </View>
       )}
@@ -166,9 +185,9 @@ export const GameScreen: React.FC = () => {
         {showResult && (
           <View style={styles.resultContainer}>
             {selectedAnswer === currentQuestion.correctAnswer ? (
-              <Text style={styles.correctText}>✅ Doğru!</Text>
+              <Text style={styles.correctText}>✅ {t('game.correct')}</Text>
             ) : (
-              <Text style={styles.wrongText}>❌ Yanlış</Text>
+              <Text style={styles.wrongText}>❌ {t('game.wrong')}</Text>
             )}
           </View>
         )}

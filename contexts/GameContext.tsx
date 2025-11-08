@@ -248,10 +248,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (data?.isMidGame) {
           console.log('🎮 Oyun ortasında katıldı, geri sayım atlanıyor');
           setShowGameStartCountdown(false);
+          // Mid-game join'de soru zaten gönderilecek, sadece bekle
         } else {
           // Normal oyun başlangıcı - 5 saniyelik geri sayım
           setQuestionNumber(1);
           setShowGameStartCountdown(true);
+          // Geri sayım bittiğinde soru gelene kadar loading gösterilecek
         }
       });
 
@@ -575,7 +577,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const createRoom = async () => {
+  const createRoom = async (difficultyLevel: number = 0) => {
     if (!socket || !user || !ageGroup || !userId) return;
 
     try {
@@ -587,12 +589,16 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      // Zorluk seviyesi validasyonu (-1, 0, 1)
+      const validDifficultyLevel = [-1, 0, 1].includes(difficultyLevel) ? difficultyLevel : 0;
+
       const response = await fetch(`${SOCKET_URL}/api/rooms`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
           hostId: userId,
           ageGroup,
+          difficultyLevel: validDifficultyLevel,
         }),
       });
 

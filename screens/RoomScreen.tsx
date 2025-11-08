@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useGame } from '../contexts/GameContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from '../components/Button';
 import { PlayerCard } from '../components/PlayerCard';
 
@@ -30,6 +31,7 @@ interface Room {
 export const RoomScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user, roomId, players, gameStatus, createRoom, joinRoom, userId, token } = useGame();
+  const { t } = useLanguage();
   const [roomCode, setRoomCode] = useState('');
   const [joining, setJoining] = useState(false);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -38,9 +40,10 @@ export const RoomScreen: React.FC = () => {
   const [showRoomList, setShowRoomList] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
   const scrollTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const [difficultyLevel, setDifficultyLevel] = useState<number>(0); // -1: Kolay, 0: Normal, 1: Zor
 
   const handleCreateRoom = () => {
-    createRoom();
+    createRoom(difficultyLevel);
   };
 
   const handleShowLeaderboard = () => {
@@ -162,6 +165,37 @@ export const RoomScreen: React.FC = () => {
 
         {!roomId ? (
           <View style={styles.actions}>
+            {/* Zorluk Seviyesi Seçimi */}
+            <View style={styles.difficultyContainer}>
+              <Text style={styles.difficultyLabel}>{t('room.difficultyLevel')}</Text>
+              <View style={styles.difficultyButtons}>
+                <TouchableOpacity
+                  style={[styles.difficultyButton, difficultyLevel === -1 && styles.difficultyButtonActive]}
+                  onPress={() => setDifficultyLevel(-1)}
+                >
+                  <Text style={[styles.difficultyButtonText, difficultyLevel === -1 && styles.difficultyButtonTextActive]}>
+                    😊 {t('room.easy')}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.difficultyButton, difficultyLevel === 0 && styles.difficultyButtonActive]}
+                  onPress={() => setDifficultyLevel(0)}
+                >
+                  <Text style={[styles.difficultyButtonText, difficultyLevel === 0 && styles.difficultyButtonTextActive]}>
+                    😐 {t('room.normal')}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.difficultyButton, difficultyLevel === 1 && styles.difficultyButtonActive]}
+                  onPress={() => setDifficultyLevel(1)}
+                >
+                  <Text style={[styles.difficultyButtonText, difficultyLevel === 1 && styles.difficultyButtonTextActive]}>
+                    😤 {t('room.hard')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
             <Button
               title="Yeni Oda Oluştur"
               onPress={handleCreateRoom}
@@ -587,6 +621,51 @@ const styles = StyleSheet.create({
     color: '#999',
     fontSize: 16,
     marginVertical: 20,
+  },
+  difficultyContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  difficultyLabel: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  difficultyButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  difficultyButton: {
+    flex: 1,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    padding: 15,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  difficultyButtonActive: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  difficultyButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  difficultyButtonTextActive: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 

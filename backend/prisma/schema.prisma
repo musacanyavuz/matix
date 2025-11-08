@@ -33,13 +33,14 @@ model User {
 
 // Oyun Odaları
 model Room {
-  id        String   @id @default(uuid())
-  code      String   @unique // Oda kodu (örn: ABC123)
-  hostId    String
-  isActive  Boolean  @default(true)
-  isPrivate Boolean  @default(false) // Private room mu?
-  ageGroup  String?  // Yaş grubu (age4, age5, grade1, vb.)
-  createdAt DateTime @default(now())
+  id             String   @id @default(uuid())
+  code           String   @unique // Oda kodu (örn: ABC123)
+  hostId         String
+  isActive       Boolean  @default(true)
+  isPrivate      Boolean  @default(false) // Private room mu?
+  ageGroup       String?  // Yaş grubu (age4, age5, grade1, vb.)
+  difficultyLevel Int?    @default(0) // Zorluk seviyesi: -1 (Kolay), 0 (Normal), 1 (Zor)
+  createdAt      DateTime @default(now())
 
   // İlişkiler
   host         User             @relation("HostUser", fields: [hostId], references: [id], onDelete: Cascade)

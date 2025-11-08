@@ -1,0 +1,122 @@
+{
+  "welcome": {
+    "title": "Matix",
+    "subtitle": "Matematik Yarışması",
+    "info": "Kayıt olarak skorlarınızı kaydedebilir ve liderlik tablosunda yer alabilirsiniz!",
+    "continueAsGuest": "Misafir olarak devam et",
+    "register": "Kayıt Ol",
+    "login": "Giriş Yap"
+  },
+  "register": {
+    "title": "Kayıt Ol",
+    "email": "E-posta",
+    "password": "Şifre",
+    "confirmPassword": "Şifre Tekrar",
+    "nickname": "Kullanıcı Adı",
+    "avatar": "Avatar",
+    "ageGroup": "Yaş Grubu",
+    "terms": "Kullanım şartlarını kabul ediyorum",
+    "register": "Kayıt Ol",
+    "alreadyHaveAccount": "Zaten hesabınız var mı? Giriş yapın"
+  },
+  "login": {
+    "title": "Giriş Yap",
+    "email": "E-posta",
+    "password": "Şifre",
+    "login": "Giriş Yap",
+    "forgotPassword": "Şifremi Unuttum",
+    "noAccount": "Hesabınız yok mu? Kayıt olun"
+  },
+  "room": {
+    "title": "Odaya Katıl",
+    "createRoom": "Oda Oluştur",
+    "joinRoom": "Odaya Katıl",
+    "roomCode": "Oda Kodu",
+    "enterCode": "Kod Gir",
+    "activeRooms": "Aktif Odalar",
+    "noRooms": "Aktif oda yok",
+    "players": "Oyuncu",
+    "waiting": "Bekleniyor",
+    "profile": "Profil",
+    "leaderboard": "Liderlik",
+    "difficultyLevel": "Zorluk Seviyesi",
+    "easy": "Kolay",
+    "normal": "Normal",
+    "hard": "Zor"
+  },
+  "game": {
+    "title": "Oyun",
+    "question": "Soru",
+    "selectAnswer": "Cevabını Seç",
+    "correct": "Doğru!",
+    "wrong": "Yanlış!",
+    "score": "Skor",
+    "home": "Anasayfa",
+    "exitGame": "Oyundan Çık",
+    "exitConfirm": "Oyundan çıkmak istediğinize emin misiniz?",
+    "cancel": "İptal",
+    "confirm": "Evet",
+    "loading": "Soru hazırlanıyor..."
+  },
+  "countdown": {
+    "gameStart": "🎮 Oyun Başlıyor",
+    "nextQuestion": "📝 Yeni Soru"
+  },
+  "result": {
+    "title": "Sonuçlar",
+    "gameOver": "Oyun Bitti!",
+    "congratulations": "Tebrikler!",
+    "youWon": "Kazandınız! 🎉",
+    "niceGame": "Güzel Oyun!",
+    "winner": "Kazanan",
+    "yourScore": "Sizin Skorunuz",
+    "playAgain": "Yeniden Oyna",
+    "goHome": "Anasayfaya Dön",
+    "finalScores": "Final Skorları",
+    "winnerBadge": "Kazanan"
+  },
+  "profile": {
+    "title": "Profil",
+    "edit": "Düzenle",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "logout": "Çıkış Yap",
+    "stats": "İstatistikler",
+    "totalScore": "Toplam Skor",
+    "totalGames": "Toplam Oyun",
+    "winRate": "Kazanma Oranı",
+    "rank": "Sıralama",
+    "viewLeaderboard": "Liderlik Tablosunu Gör",
+    "convertToUser": "Hesaba Dönüştür",
+    "guest": "Misafir Kullanıcı",
+    "language": "Dil"
+  },
+  "leaderboard": {
+    "title": "Liderlik Tablosu",
+    "yourRank": "Sizin Sıranız",
+    "points": "Puan"
+  },
+  "common": {
+    "loading": "Yükleniyor...",
+    "error": "Hata",
+    "success": "Başarılı",
+    "ok": "Tamam",
+    "yes": "Evet",
+    "no": "Hayır",
+    "back": "Geri"
+  },
+  "ageGroups": {
+    "age4": "4 Yaş",
+    "age5": "5 Yaş",
+    "age6": "6 Yaş",
+    "grade1": "1. Sınıf",
+    "grade2": "2. Sınıf",
+    "grade3": "3. Sınıf",
+    "grade4": "4. Sınıf"
+  },
+  "countdown": {
+    "gameStart": "Oyun Başlıyor",
+    "nextQuestion": "Sonraki Soru"
+  }
+}
+

@@ -3,6 +3,7 @@ import { NavigationContainer, NavigationContainerRef } from '@react-navigation/n
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
 import { GameProvider, useGame } from './contexts/GameContext';
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { RegisterScreen } from './screens/RegisterScreen';
 import { LoginScreen } from './screens/LoginScreen';
@@ -11,6 +12,7 @@ import { RoomScreen } from './screens/RoomScreen';
 import { GameScreen } from './screens/GameScreen';
 import { ResultScreen } from './screens/ResultScreen';
 import { LeaderboardScreen } from './screens/LeaderboardScreen';
+import { LanguageSelector } from './components/LanguageSelector';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 const Stack = createStackNavigator();
@@ -41,27 +43,25 @@ const NavigationHandler: React.FC = () => {
 
 // Navigasyon yönlendirmesi için wrapper component
 const AppNavigator: React.FC = () => {
-  const { user, clearAllData } = useGame();
+  const { user } = useGame();
+  const { t, language } = useLanguage();
   const [isLoading, setIsLoading] = React.useState(true);
+  const navigationRef = React.useRef<any>(null);
 
   useEffect(() => {
-    // Storage'ı temizle ve uygulamayı sıfırla
-    const initApp = async () => {
-      try {
-        await clearAllData();
-        console.log('✅ Storage temizlendi, uygulama sıfırlandı');
-      } catch (error) {
-        console.error('❌ Storage temizleme hatası:', error);
-      } finally {
-        // Kullanıcı bilgisi yüklenene kadar bekle
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 500);
-      }
-    };
-    
-    initApp();
+    // Kullanıcı bilgisi yüklenene kadar bekle
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
   }, []);
+
+  // Dil değiştiğinde navigation header'larını güncelle
+  useEffect(() => {
+    if (navigationRef.current?.isReady()) {
+      // Navigation header'ları otomatik olarak güncellenecek
+      // çünkü options fonksiyonları her render'da çağrılıyor
+    }
+  }, [language, t]);
 
   if (isLoading) {
     return (
@@ -83,60 +83,81 @@ const AppNavigator: React.FC = () => {
           headerTitleStyle: {
             fontWeight: 'bold',
           },
+          headerRight: () => <LanguageSelector />,
         }}
         initialRouteName={user ? 'Room' : 'Welcome'}
       >
         <Stack.Screen
           name="Welcome"
           component={WelcomeScreen}
-          options={{ headerShown: false }}
+          options={{ 
+            headerShown: true,
+            title: t('welcome.title'),
+            headerRight: () => <LanguageSelector />,
+          }}
         />
         <Stack.Screen
           name="Register"
           component={RegisterScreen}
-          options={{ headerShown: false }}
+          options={{ 
+            headerShown: true,
+            title: t('register.title'),
+            headerRight: () => <LanguageSelector />,
+          }}
         />
         <Stack.Screen
           name="Login"
           component={LoginScreen}
-          options={{ headerShown: false }}
+          options={{ 
+            headerShown: true,
+            title: t('login.title'),
+            headerRight: () => <LanguageSelector />,
+          }}
         />
         <Stack.Screen
           name="Profile"
           component={ProfileScreen}
-          options={{ headerShown: false }}
+          options={{ 
+            headerShown: true,
+            title: t('profile.title'),
+            headerRight: () => <LanguageSelector />,
+          }}
         />
         <Stack.Screen
           name="Room"
           component={RoomScreen}
           options={{
-            title: 'Oda Seçimi',
-            headerBackTitle: 'Geri',
+            title: t('room.title'),
+            headerBackTitle: t('common.back'),
+            headerRight: () => <LanguageSelector />,
           }}
         />
         <Stack.Screen
           name="Game"
           component={GameScreen}
           options={{
-            title: 'Oyun',
+            title: t('game.title'),
             gestureEnabled: false,
             headerLeft: () => null,
+            headerRight: () => <LanguageSelector />,
           }}
         />
         <Stack.Screen
           name="Result"
           component={ResultScreen}
           options={{
-            title: 'Sonuçlar',
-            headerBackTitle: 'Geri',
+            title: t('result.title'),
+            headerBackTitle: t('common.back'),
+            headerRight: () => <LanguageSelector />,
           }}
         />
         <Stack.Screen
           name="Leaderboard"
           component={LeaderboardScreen}
           options={{
-            title: 'Liderlik Tablosu',
-            headerBackTitle: 'Geri',
+            title: t('leaderboard.title'),
+            headerBackTitle: t('common.back'),
+            headerRight: () => <LanguageSelector />,
           }}
         />
       </Stack.Navigator>
@@ -147,12 +168,14 @@ const AppNavigator: React.FC = () => {
 // Ana App component
 export default function App() {
   return (
-    <GameProvider>
-      <StatusBar style="light" />
-      <NavigationContainer ref={navigationRef}>
-        <AppNavigator />
-      </NavigationContainer>
-    </GameProvider>
+    <LanguageProvider>
+      <GameProvider>
+        <StatusBar style="light" />
+        <NavigationContainer ref={navigationRef}>
+          <AppNavigator />
+        </NavigationContainer>
+      </GameProvider>
+    </LanguageProvider>
   );
 }
 

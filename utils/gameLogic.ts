@@ -22,10 +22,37 @@ interface DifficultyConfig {
   wrongAnswerRange: { min: number; max: number };
 }
 
-const getDifficultyConfig = (ageGroup: AgeGroup): DifficultyConfig => {
+// Zorluk seviyesi: -1 (Kolay), 0 (Normal), 1 (Zor)
+type DifficultyLevel = -1 | 0 | 1;
+
+// Zorluk seviyesine göre aralıkları ayarla
+const adjustRange = (range: { min: number; max: number }, level: DifficultyLevel): { min: number; max: number } => {
+  if (level === 0) return range; // Normal seviye, değişiklik yok
+  
+  const rangeSize = range.max - range.min;
+  const adjustment = Math.max(1, Math.floor(rangeSize * 0.3)); // %30 değişiklik
+  
+  if (level === -1) {
+    // Kolay: Daha küçük sayılar
+    return {
+      min: Math.max(1, range.min),
+      max: Math.max(range.min + 1, range.max - adjustment),
+    };
+  } else {
+    // Zor: Daha büyük sayılar
+    return {
+      min: range.min,
+      max: range.max + adjustment,
+    };
+  }
+};
+
+const getDifficultyConfig = (ageGroup: AgeGroup, difficultyLevel: DifficultyLevel = 0): DifficultyConfig => {
+  let baseConfig: DifficultyConfig;
+  
   switch (ageGroup) {
     case 'age4':
-      return {
+      baseConfig = {
         operations: ['+'],
         additionRange: { min: 1, max: 5 },
         subtractionRange: { min: 1, max: 5 },
@@ -33,9 +60,10 @@ const getDifficultyConfig = (ageGroup: AgeGroup): DifficultyConfig => {
         divisionRange: { min: 2, max: 5 },
         wrongAnswerRange: { min: -3, max: 3 },
       };
+      break;
     
     case 'age5':
-      return {
+      baseConfig = {
         operations: ['+', '-'],
         additionRange: { min: 1, max: 10 },
         subtractionRange: { min: 1, max: 10 },
@@ -43,9 +71,10 @@ const getDifficultyConfig = (ageGroup: AgeGroup): DifficultyConfig => {
         divisionRange: { min: 2, max: 5 },
         wrongAnswerRange: { min: -5, max: 5 },
       };
+      break;
     
     case 'age6':
-      return {
+      baseConfig = {
         operations: ['+', '-'],
         additionRange: { min: 1, max: 15 },
         subtractionRange: { min: 1, max: 15 },
@@ -53,9 +82,10 @@ const getDifficultyConfig = (ageGroup: AgeGroup): DifficultyConfig => {
         divisionRange: { min: 2, max: 6 },
         wrongAnswerRange: { min: -8, max: 8 },
       };
+      break;
     
     case 'grade1':
-      return {
+      baseConfig = {
         operations: ['+', '-'],
         additionRange: { min: 1, max: 20 },
         subtractionRange: { min: 1, max: 20 },
@@ -63,9 +93,10 @@ const getDifficultyConfig = (ageGroup: AgeGroup): DifficultyConfig => {
         divisionRange: { min: 2, max: 6 },
         wrongAnswerRange: { min: -10, max: 10 },
       };
+      break;
     
     case 'grade2':
-      return {
+      baseConfig = {
         operations: ['+', '-', '*'],
         additionRange: { min: 1, max: 50 },
         subtractionRange: { min: 1, max: 50 },
@@ -73,9 +104,10 @@ const getDifficultyConfig = (ageGroup: AgeGroup): DifficultyConfig => {
         divisionRange: { min: 2, max: 10 },
         wrongAnswerRange: { min: -15, max: 15 },
       };
+      break;
     
     case 'grade3':
-      return {
+      baseConfig = {
         operations: ['+', '-', '*'],
         additionRange: { min: 1, max: 100 },
         subtractionRange: { min: 1, max: 100 },
@@ -83,9 +115,10 @@ const getDifficultyConfig = (ageGroup: AgeGroup): DifficultyConfig => {
         divisionRange: { min: 2, max: 10 },
         wrongAnswerRange: { min: -20, max: 20 },
       };
+      break;
     
     case 'grade4':
-      return {
+      baseConfig = {
         operations: ['+', '-', '*', '/'],
         additionRange: { min: 1, max: 100 },
         subtractionRange: { min: 1, max: 100 },
@@ -93,9 +126,10 @@ const getDifficultyConfig = (ageGroup: AgeGroup): DifficultyConfig => {
         divisionRange: { min: 2, max: 12 },
         wrongAnswerRange: { min: -25, max: 25 },
       };
+      break;
     
     default:
-      return {
+      baseConfig = {
         operations: ['+', '-'],
         additionRange: { min: 1, max: 20 },
         subtractionRange: { min: 1, max: 20 },
@@ -104,11 +138,25 @@ const getDifficultyConfig = (ageGroup: AgeGroup): DifficultyConfig => {
         wrongAnswerRange: { min: -10, max: 10 },
       };
   }
+  
+  // Zorluk seviyesine göre ayarla
+  if (difficultyLevel !== 0) {
+    return {
+      ...baseConfig,
+      additionRange: adjustRange(baseConfig.additionRange, difficultyLevel),
+      subtractionRange: adjustRange(baseConfig.subtractionRange, difficultyLevel),
+      multiplicationRange: adjustRange(baseConfig.multiplicationRange, difficultyLevel),
+      divisionRange: adjustRange(baseConfig.divisionRange, difficultyLevel),
+      wrongAnswerRange: adjustRange(baseConfig.wrongAnswerRange, difficultyLevel),
+    };
+  }
+  
+  return baseConfig;
 };
 
 // Yaş grubuna göre matematik sorusu oluştur
-export const generateQuestion = (ageGroup: AgeGroup): Question => {
-  const config = getDifficultyConfig(ageGroup);
+export const generateQuestion = (ageGroup: AgeGroup, difficultyLevel: DifficultyLevel = 0): Question => {
+  const config = getDifficultyConfig(ageGroup, difficultyLevel);
   const operations = config.operations;
   const operation = operations[randomInt(0, operations.length - 1)];
   
