@@ -48,6 +48,7 @@ interface GameContextType extends GameState {
   setShowGameStartCountdown: (show: boolean) => void;
   showQuestionCountdown: boolean;
   setShowQuestionCountdown: (show: boolean) => void;
+  isLoadingUser: boolean;
   setUser: (user: User, guestUserId?: string | null) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, nickname: string, avatar: string, ageGroup: AgeGroup) => Promise<void>;
@@ -80,8 +81,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [showGameStartCountdown, setShowGameStartCountdown] = useState(false);
   const [showQuestionCountdown, setShowQuestionCountdown] = useState(false);
   const [playerAnswers, setPlayerAnswers] = useState<Array<{ userId: string; answer: number }>>([]);
+  const [isLoadingUser, setIsLoadingUser] = useState(true); // Kullanıcı yükleniyor mu?
 
   const loadUser = async () => {
+    setIsLoadingUser(true);
     try {
       // Token'ı yükle
       const savedToken = await AsyncStorage.getItem('token');
@@ -155,6 +158,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } catch (error) {
       console.error('Kullanıcı bilgisi yüklenemedi:', error);
+    } finally {
+      setIsLoadingUser(false);
     }
   };
 
@@ -259,6 +264,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       newSocket.on('newQuestion', (data: { question: string; options: string[]; correctAnswer: string; questionNumber: number }) => {
         console.log('📝 Yeni soru alındı:', data.question, 'Soru #' + data.questionNumber);
+        // Oyun başlangıç geri sayımını kapat (eğer hala açıksa)
+        setShowGameStartCountdown(false);
         // Oyuncu cevaplarını temizle
         setPlayerAnswers([]);
         // 2 saniyelik geri sayım başlat (soru gösteriliyor, sadece overlay)
@@ -812,6 +819,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showQuestionCountdown,
         setShowQuestionCountdown,
         playerAnswers,
+        isLoadingUser,
         setUser,
         login,
         register,

@@ -89,12 +89,36 @@
     "viewLeaderboard": "View Leaderboard",
     "convertToUser": "Convert to Account",
     "guest": "Guest User",
-    "language": "Language"
+    "language": "Language",
+    "performance": "Performance"
+  },
+  "performance": {
+    "title": "Performance Report",
+    "overall": "Overall Performance",
+    "successRate": "Success Rate",
+    "correctAnswers": "Correct Answers",
+    "wrongAnswers": "Wrong Answers",
+    "totalQuestions": "Total Questions",
+    "dailyPerformance": "Daily Performance",
+    "dailyImprovement": "Daily Improvement",
+    "last7Days": "Last 7 Days",
+    "questions": "Questions",
+    "correct": "Correct",
+    "wrong": "Wrong",
+    "score": "Score",
+    "noData": "No performance data yet",
+    "loading": "Loading..."
   },
   "leaderboard": {
     "title": "Leaderboard",
     "yourRank": "Your Rank",
     "points": "Points"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "turkish": "Türkçe",
+    "english": "English"
   },
   "common": {
     "loading": "Loading...",
@@ -103,7 +127,9 @@
     "ok": "OK",
     "yes": "Yes",
     "no": "No",
-    "back": "Back"
+    "back": "Back",
+    "today": "Today",
+    "yesterday": "Yesterday"
   },
   "ageGroups": {
     "age4": "Age 4",

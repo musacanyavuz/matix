@@ -115,17 +115,6 @@ export const LeaderboardScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => (navigation as any).goBack()}
-        >
-          <Text style={styles.backButtonText}>← Geri</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>🏆 Liderlik Tablosu</Text>
-        <View style={styles.placeholder} />
-      </View>
-
       {userRank && (
         <View style={styles.userRankCard}>
           <Text style={styles.userRankTitle}>Senin Sıran</Text>
@@ -163,30 +152,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 20,
-    paddingTop: 60,
-    backgroundColor: '#4CAF50',
-  },
-  backButton: {
-    padding: 8,
-  },
-  backButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  placeholder: {
-    width: 60,
   },
   userRankCard: {
     backgroundColor: '#FFD700',

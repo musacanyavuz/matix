@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,25 +8,15 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
-  FlatList,
-  RefreshControl,
-  ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useGame } from '../contexts/GameContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from '../components/Button';
 import { PlayerCard } from '../components/PlayerCard';
+import { RoomList } from '../components/RoomList';
 
-interface Room {
-  id: string;
-  code: string;
-  host: { nickname: string; avatar: string };
-  ageGroup: string | null;
-  participantCount: number;
-  maxParticipants: number;
-  createdAt: string;
-}
 
 export const RoomScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -34,81 +24,13 @@ export const RoomScreen: React.FC = () => {
   const { t } = useLanguage();
   const [roomCode, setRoomCode] = useState('');
   const [joining, setJoining] = useState(false);
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [loadingRooms, setLoadingRooms] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [showRoomList, setShowRoomList] = useState(false);
-  const [isScrolling, setIsScrolling] = useState(false);
-  const scrollTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const [difficultyLevel, setDifficultyLevel] = useState<number>(0); // -1: Kolay, 0: Normal, 1: Zor
 
   const handleCreateRoom = () => {
     createRoom(difficultyLevel);
   };
 
-  const handleShowLeaderboard = () => {
-    (navigation as any).navigate('Leaderboard');
-  };
-
-  const SOCKET_URL = 'http://192.168.1.107:3001';
-
-  useEffect(() => {
-    loadRooms();
-    // Her 10 saniyede bir oda listesini yenile (sadece scroll yapılmıyorsa)
-    const interval = setInterval(() => {
-      if (!isScrolling) {
-        loadRooms();
-      }
-    }, 10000); // 5 saniyeden 10 saniyeye çıkarıldı
-    return () => {
-      clearInterval(interval);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, [isScrolling]);
-
-  const loadRooms = async (silent = false) => {
-    // Scroll yapılıyorsa refresh'i atla (sessiz mod hariç)
-    if (isScrolling && !silent) {
-      return;
-    }
-
-    try {
-      if (!silent) {
-        setLoadingRooms(true);
-      }
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${SOCKET_URL}/api/rooms`, {
-        method: 'GET',
-        headers,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setRooms(data.data || []);
-      }
-    } catch (error) {
-      console.error('Oda listesi yüklenirken hata:', error);
-    } finally {
-      if (!silent) {
-        setLoadingRooms(false);
-        setRefreshing(false);
-      }
-    }
-  };
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    setIsScrolling(false); // Refresh sırasında scroll durumunu sıfırla
-    loadRooms(false);
-  };
 
   const handleJoinRoom = async (code?: string) => {
     const codeToJoin = code || roomCode.trim().toUpperCase();
@@ -127,7 +49,7 @@ export const RoomScreen: React.FC = () => {
     }
   };
 
-  const handleJoinRoomFromList = async (room: Room) => {
+  const handleJoinRoomFromList = async (room: { id: string; code: string; participantCount: number; maxParticipants: number }) => {
     if (room.participantCount >= room.maxParticipants) {
       Alert.alert('Hata', 'Bu oda dolu!');
       return;
@@ -142,27 +64,83 @@ export const RoomScreen: React.FC = () => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>🎯 Odaya Katıl</Text>
-          <View style={styles.headerButtons}>
-            <TouchableOpacity
-              style={styles.profileButton}
-              onPress={() => (navigation as any).navigate('Profile')}
-            >
-              <Text style={styles.profileAvatar}>{user?.avatar}</Text>
-              <Text style={styles.profileNickname}>{user?.nickname}</Text>
-              <Text style={styles.profileButtonText}>👤 Profil</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.leaderboardButton}
-              onPress={handleShowLeaderboard}
-            >
-              <Text style={styles.leaderboardButtonText}>🏆 Liderlik</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+      {showRoomList && !roomId ? (
+        // Oda listesi gösterildiğinde ScrollView kullan, FlatList yerine map kullan
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
+          bounces={true}
+        >
+          <View style={styles.content}>
+            <View style={styles.actions}>
+              <View style={styles.difficultyContainer}>
+                <Text style={styles.difficultyLabel}>{t('room.difficultyLevel')}</Text>
+                <View style={styles.difficultyButtons}>
+                  <TouchableOpacity
+                    style={[styles.difficultyButton, difficultyLevel === -1 && styles.difficultyButtonActive]}
+                    onPress={() => setDifficultyLevel(-1)}
+                  >
+                    <Text style={[styles.difficultyButtonText, difficultyLevel === -1 && styles.difficultyButtonTextActive]}>
+                      😊 {t('room.easy')}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.difficultyButton, difficultyLevel === 0 && styles.difficultyButtonActive]}
+                    onPress={() => setDifficultyLevel(0)}
+                  >
+                    <Text style={[styles.difficultyButtonText, difficultyLevel === 0 && styles.difficultyButtonTextActive]}>
+                      😐 {t('room.normal')}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.difficultyButton, difficultyLevel === 1 && styles.difficultyButtonActive]}
+                    onPress={() => setDifficultyLevel(1)}
+                  >
+                    <Text style={[styles.difficultyButtonText, difficultyLevel === 1 && styles.difficultyButtonTextActive]}>
+                      😤 {t('room.hard')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
 
+              <Button
+                title="Yeni Oda Oluştur"
+                onPress={handleCreateRoom}
+                variant="primary"
+              />
+
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>veya</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <TouchableOpacity
+                style={styles.toggleButton}
+                onPress={() => setShowRoomList(!showRoomList)}
+              >
+                <Text style={styles.toggleButtonText}>
+                  {showRoomList ? '📝 Oda Kodu ile Katıl' : '📋 Oda Listesinden Seç'}
+                </Text>
+              </TouchableOpacity>
+
+              <RoomList onJoinRoom={handleJoinRoomFromList} joining={joining} />
+            </View>
+          </View>
+        </ScrollView>
+      ) : (
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
+          bounces={true}
+          onScrollBeginDrag={onScrollBeginDrag}
+          onScrollEndDrag={onScrollEndDrag}
+          onMomentumScrollEnd={onMomentumScrollEnd}
+          scrollEventThrottle={16}
+        >
+          <View style={styles.content}>
         {!roomId ? (
           <View style={styles.actions}>
             {/* Zorluk Seviyesi Seçimi */}
@@ -219,78 +197,7 @@ export const RoomScreen: React.FC = () => {
             </TouchableOpacity>
 
             {showRoomList ? (
-              <View style={styles.roomListContainer}>
-                <Text style={styles.roomListTitle}>Aktif Odalar</Text>
-                {loadingRooms ? (
-                  <ActivityIndicator size="large" color="#4CAF50" style={styles.loader} />
-                ) : rooms.length === 0 ? (
-                  <Text style={styles.noRoomsText}>Aktif oda bulunamadı</Text>
-                ) : (
-                  <FlatList
-                    data={rooms}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        style={[
-                          styles.roomItem,
-                          item.participantCount >= item.maxParticipants && styles.roomItemFull,
-                        ]}
-                        onPress={() => handleJoinRoomFromList(item)}
-                        disabled={item.participantCount >= item.maxParticipants || joining}
-                      >
-                        <View style={styles.roomItemHeader}>
-                          <Text style={styles.roomItemCode}>{item.code}</Text>
-                          <Text style={styles.roomItemHost}>
-                            {item.host.avatar} {item.host.nickname}
-                          </Text>
-                        </View>
-                        <View style={styles.roomItemInfo}>
-                          <Text style={styles.roomItemParticipants}>
-                            👥 {item.participantCount}/{item.maxParticipants}
-                          </Text>
-                          {item.ageGroup && (
-                            <Text style={styles.roomItemAgeGroup}>
-                              📚 {item.ageGroup}
-                            </Text>
-                          )}
-                        </View>
-                        {item.participantCount >= item.maxParticipants && (
-                          <Text style={styles.roomItemFullText}>Dolu</Text>
-                        )}
-                      </TouchableOpacity>
-                    )}
-                    refreshControl={
-                      <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-                    }
-                    onScrollBeginDrag={() => {
-                      setIsScrolling(true);
-                      // Scroll timeout'unu temizle
-                      if (scrollTimeoutRef.current) {
-                        clearTimeout(scrollTimeoutRef.current);
-                      }
-                    }}
-                    onScrollEndDrag={() => {
-                      // Scroll bittikten 2 saniye sonra refresh'i tekrar aktif et
-                      if (scrollTimeoutRef.current) {
-                        clearTimeout(scrollTimeoutRef.current);
-                      }
-                      scrollTimeoutRef.current = setTimeout(() => {
-                        setIsScrolling(false);
-                      }, 2000);
-                    }}
-                    onMomentumScrollEnd={() => {
-                      // Momentum scroll bittikten 2 saniye sonra refresh'i tekrar aktif et
-                      if (scrollTimeoutRef.current) {
-                        clearTimeout(scrollTimeoutRef.current);
-                      }
-                      scrollTimeoutRef.current = setTimeout(() => {
-                        setIsScrolling(false);
-                      }, 2000);
-                    }}
-                    style={styles.roomList}
-                  />
-                )}
-              </View>
+              <RoomList onJoinRoom={handleJoinRoomFromList} joining={joining} />
             ) : (
               <View style={styles.joinSection}>
                 <TextInput
@@ -353,7 +260,9 @@ export const RoomScreen: React.FC = () => {
             )}
           </View>
         )}
-      </View>
+          </View>
+        </ScrollView>
+      )}
     </KeyboardAvoidingView>
   );
 };
@@ -363,20 +272,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
+  content: {
     padding: 20,
-    justifyContent: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-    marginBottom: 20,
   },
   profileButton: {
     backgroundColor: '#fff',
@@ -391,47 +295,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#4CAF50',
     minWidth: 150,
-  },
-  profileAvatar: {
-    fontSize: 40,
-    marginBottom: 5,
-  },
-  profileNickname: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
-  },
-  profileButtonText: {
-    fontSize: 14,
-    color: '#4CAF50',
-    fontWeight: '600',
-  },
-  headerButtons: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 10,
-    width: '100%',
-  },
-  leaderboardButton: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 2,
-    borderColor: '#FF9800',
-    flex: 1,
-  },
-  leaderboardButtonText: {
-    fontSize: 14,
-    color: '#FF9800',
-    fontWeight: '600',
   },
   actions: {
     backgroundColor: '#fff',
@@ -552,7 +415,13 @@ const styles = StyleSheet.create({
   },
   roomListContainer: {
     marginTop: 10,
-    maxHeight: 400,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 15,
+    height: 400,
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+    overflow: 'hidden',
   },
   roomListTitle: {
     fontSize: 18,
@@ -561,8 +430,30 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     textAlign: 'center',
   },
-  roomList: {
-    maxHeight: 350,
+  roomListScrollContainer: {
+    flex: 1,
+    minHeight: 0,
+  },
+  roomListScrollView: {
+    flex: 1,
+  },
+  roomListScrollContent: {
+    paddingBottom: 10,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyRoomsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: 'center',
   },
   roomItem: {
     backgroundColor: '#f9f9f9',

@@ -331,7 +331,13 @@ export const ProfileScreen: React.FC = () => {
               style={styles.leaderboardButton}
               onPress={() => (navigation as any).navigate('Leaderboard')}
             >
-              <Text style={styles.leaderboardButtonText}>🏆 Liderlik Tablosunu Gör</Text>
+              <Text style={styles.leaderboardButtonText}>🏆 {t('profile.viewLeaderboard')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.leaderboardButton, styles.performanceButton]}
+              onPress={() => (navigation as any).navigate('Performance')}
+            >
+              <Text style={styles.leaderboardButtonText}>📊 {t('profile.performance')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -487,28 +493,13 @@ export const ProfileScreen: React.FC = () => {
             </View>
           )}
 
-          {/* Dil Seçimi */}
-          <View style={styles.languageContainer}>
-            <Text style={styles.languageLabel}>{t('profile.language') || 'Dil'}</Text>
-            <View style={styles.languageButtons}>
-              <TouchableOpacity
-                style={[styles.languageButton, language === 'tr' && styles.languageButtonActive]}
-                onPress={() => setLanguage('tr')}
-              >
-                <Text style={[styles.languageButtonText, language === 'tr' && styles.languageButtonTextActive]}>
-                  🇹🇷 Türkçe
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.languageButton, language === 'en' && styles.languageButtonActive]}
-                onPress={() => setLanguage('en')}
-              >
-                <Text style={[styles.languageButtonText, language === 'en' && styles.languageButtonTextActive]}>
-                  🇬🇧 English
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          {/* Ayarlar Butonu */}
+          <TouchableOpacity
+            style={[styles.leaderboardButton, styles.settingsButton]}
+            onPress={() => (navigation as any).navigate('Settings')}
+          >
+            <Text style={styles.leaderboardButtonText}>⚙️ {t('settings.title')}</Text>
+          </TouchableOpacity>
 
           {/* Çıkış Yap butonu (kayıtlı kullanıcılar için) */}
           {isAuthenticated && (
@@ -717,50 +708,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   leaderboardButton: {
-    backgroundColor: '#FF9800',
+    backgroundColor: '#4CAF50',
     borderRadius: 12,
     padding: 15,
     alignItems: 'center',
-    marginTop: 15,
+    marginTop: 10,
+  },
+  performanceButton: {
+    backgroundColor: '#2196F3',
+    marginTop: 10,
+  },
+  settingsButton: {
+    backgroundColor: '#9C27B0',
+    marginTop: 10,
   },
   leaderboardButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  languageContainer: {
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  languageLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 10,
-  },
-  languageButtons: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  languageButton: {
-    flex: 1,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 12,
-    padding: 15,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  languageButtonActive: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
-  },
-  languageButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#666',
-  },
-  languageButtonTextActive: {
-    color: '#fff',
   },
 });

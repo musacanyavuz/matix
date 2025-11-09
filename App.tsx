@@ -12,8 +12,56 @@ import { RoomScreen } from './screens/RoomScreen';
 import { GameScreen } from './screens/GameScreen';
 import { ResultScreen } from './screens/ResultScreen';
 import { LeaderboardScreen } from './screens/LeaderboardScreen';
-import { LanguageSelector } from './components/LanguageSelector';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { PerformanceScreen } from './screens/PerformanceScreen';
+import { SettingsScreen } from './screens/SettingsScreen';
+import { View, ActivityIndicator, StyleSheet, TouchableOpacity, Text } from 'react-native';
+
+// Room Header Buttons Component
+const RoomHeaderButtons: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const { user } = useGame();
+
+  return (
+    <View style={headerButtonStyles.container}>
+      <TouchableOpacity
+        style={headerButtonStyles.button}
+        onPress={() => navigation.navigate('Profile')}
+      >
+        <Text style={headerButtonStyles.avatar}>{user?.avatar || '👤'}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={headerButtonStyles.button}
+        onPress={() => navigation.navigate('Leaderboard')}
+      >
+        <Text style={headerButtonStyles.icon}>🏆</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const headerButtonStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 10,
+    gap: 8,
+  },
+  button: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  avatar: {
+    fontSize: 24,
+  },
+  icon: {
+    fontSize: 20,
+  },
+});
 
 const Stack = createStackNavigator();
 
@@ -43,17 +91,9 @@ const NavigationHandler: React.FC = () => {
 
 // Navigasyon yönlendirmesi için wrapper component
 const AppNavigator: React.FC = () => {
-  const { user } = useGame();
+  const { user, isLoadingUser } = useGame();
   const { t, language } = useLanguage();
-  const [isLoading, setIsLoading] = React.useState(true);
   const navigationRef = React.useRef<any>(null);
-
-  useEffect(() => {
-    // Kullanıcı bilgisi yüklenene kadar bekle
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-  }, []);
 
   // Dil değiştiğinde navigation header'larını güncelle
   useEffect(() => {
@@ -63,7 +103,8 @@ const AppNavigator: React.FC = () => {
     }
   }, [language, t]);
 
-  if (isLoading) {
+  // Kullanıcı bilgisi yüklenene kadar bekle
+  if (isLoadingUser) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#4CAF50" />
@@ -83,7 +124,6 @@ const AppNavigator: React.FC = () => {
           headerTitleStyle: {
             fontWeight: 'bold',
           },
-          headerRight: () => <LanguageSelector />,
         }}
         initialRouteName={user ? 'Room' : 'Welcome'}
       >
@@ -93,7 +133,6 @@ const AppNavigator: React.FC = () => {
           options={{ 
             headerShown: true,
             title: t('welcome.title'),
-            headerRight: () => <LanguageSelector />,
           }}
         />
         <Stack.Screen
@@ -102,7 +141,6 @@ const AppNavigator: React.FC = () => {
           options={{ 
             headerShown: true,
             title: t('register.title'),
-            headerRight: () => <LanguageSelector />,
           }}
         />
         <Stack.Screen
@@ -111,7 +149,6 @@ const AppNavigator: React.FC = () => {
           options={{ 
             headerShown: true,
             title: t('login.title'),
-            headerRight: () => <LanguageSelector />,
           }}
         />
         <Stack.Screen
@@ -120,17 +157,17 @@ const AppNavigator: React.FC = () => {
           options={{ 
             headerShown: true,
             title: t('profile.title'),
-            headerRight: () => <LanguageSelector />,
           }}
         />
         <Stack.Screen
           name="Room"
           component={RoomScreen}
-          options={{
-            title: t('room.title'),
+          options={({ navigation }) => ({
+            title: `🎯 ${t('room.title')}`,
             headerBackTitle: t('common.back'),
-            headerRight: () => <LanguageSelector />,
-          }}
+            contentStyle: { flex: 1 },
+            headerRight: () => <RoomHeaderButtons navigation={navigation} />,
+          })}
         />
         <Stack.Screen
           name="Game"
@@ -139,7 +176,6 @@ const AppNavigator: React.FC = () => {
             title: t('game.title'),
             gestureEnabled: false,
             headerLeft: () => null,
-            headerRight: () => <LanguageSelector />,
           }}
         />
         <Stack.Screen
@@ -147,17 +183,32 @@ const AppNavigator: React.FC = () => {
           component={ResultScreen}
           options={{
             title: t('result.title'),
-            headerBackTitle: t('common.back'),
-            headerRight: () => <LanguageSelector />,
+            gestureEnabled: false,
+            headerLeft: () => null,
           }}
         />
         <Stack.Screen
           name="Leaderboard"
           component={LeaderboardScreen}
           options={{
-            title: t('leaderboard.title'),
+            title: `🏆 ${t('leaderboard.title')}`,
             headerBackTitle: t('common.back'),
-            headerRight: () => <LanguageSelector />,
+          }}
+        />
+        <Stack.Screen
+          name="Performance"
+          component={PerformanceScreen}
+          options={{
+            title: t('performance.title'),
+            headerBackTitle: t('common.back'),
+          }}
+        />
+        <Stack.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{
+            title: t('settings.title'),
+            headerBackTitle: t('common.back'),
           }}
         />
       </Stack.Navigator>

@@ -89,12 +89,36 @@
     "viewLeaderboard": "Liderlik Tablosunu Gör",
     "convertToUser": "Hesaba Dönüştür",
     "guest": "Misafir Kullanıcı",
-    "language": "Dil"
+    "language": "Dil",
+    "performance": "Performans"
+  },
+  "performance": {
+    "title": "Performans Raporu",
+    "overall": "Genel Performans",
+    "successRate": "Başarı Oranı",
+    "correctAnswers": "Doğru Cevaplar",
+    "wrongAnswers": "Yanlış Cevaplar",
+    "totalQuestions": "Toplam Soru",
+    "dailyPerformance": "Günlük Performans",
+    "dailyImprovement": "Günlük Artış",
+    "last7Days": "Son 7 Gün",
+    "questions": "Soru",
+    "correct": "Doğru",
+    "wrong": "Yanlış",
+    "score": "Skor",
+    "noData": "Henüz performans verisi yok",
+    "loading": "Yükleniyor..."
   },
   "leaderboard": {
     "title": "Liderlik Tablosu",
     "yourRank": "Sizin Sıranız",
     "points": "Puan"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "language": "Dil",
+    "turkish": "Türkçe",
+    "english": "English"
   },
   "common": {
     "loading": "Yükleniyor...",
@@ -103,7 +127,9 @@
     "ok": "Tamam",
     "yes": "Evet",
     "no": "Hayır",
-    "back": "Geri"
+    "back": "Geri",
+    "today": "Bugün",
+    "yesterday": "Dün"
   },
   "ageGroups": {
     "age4": "4 Yaş",

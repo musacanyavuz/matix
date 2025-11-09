@@ -140,7 +140,6 @@ class UserService {
     });
 
     // Kazanılan oyun sayısı (oda içinde en yüksek skora sahip olduğu oyunlar)
-    // Bu hesaplama için her oda için en yüksek skoru bulmamız gerekiyor
     const rooms = await prisma.roomParticipant.findMany({
       where: {
         userId: userId,
@@ -149,20 +148,40 @@ class UserService {
         room: {
           include: {
             participants: true,
+            gameSessions: true, // Soru sayısını hesaplamak için
           },
         },
       },
     });
 
     let wonGames = 0;
+    let totalQuestions = 0;
+    let totalCorrectAnswers = 0;
+
     for (const participant of rooms) {
       const roomParticipants = participant.room.participants;
       const maxScore = Math.max(...roomParticipants.map(p => p.score));
       const userScore = participant.score;
+      
+      // Oyun kazanma kontrolü
       if (userScore === maxScore && roomParticipants.filter(p => p.score === maxScore).length === 1) {
         wonGames++;
       }
+
+      // Soru sayısı (her oyun 10 soru)
+      const questionCount = participant.room.gameSessions.length;
+      totalQuestions += questionCount;
+      // Doğru cevap sayısı = skor (her doğru cevap +1 puan)
+      totalCorrectAnswers += userScore;
     }
+
+    // Yanlış cevap sayısı = toplam soru - doğru cevap
+    const totalWrongAnswers = totalQuestions - totalCorrectAnswers;
+    
+    // Başarı oranı
+    const successRate = totalQuestions > 0 
+      ? ((totalCorrectAnswers / totalQuestions) * 100).toFixed(1) 
+      : 0;
 
     // Liderlik sırası (sadece kayıtlı kullanıcılar arasında)
     const leaderboardPosition = user.isGuest 
@@ -176,12 +195,90 @@ class UserService {
           },
         }) + 1;
 
+    // Günlük performans (son 7 gün)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const recentRooms = await prisma.roomParticipant.findMany({
+      where: {
+        userId: userId,
+        room: {
+          createdAt: {
+            gte: sevenDaysAgo,
+          },
+        },
+      },
+      include: {
+        room: {
+          include: {
+            gameSessions: true,
+          },
+        },
+      },
+      orderBy: {
+        room: {
+          createdAt: 'asc',
+        },
+      },
+    });
+
+    // Günlük performans verileri
+    const dailyPerformance = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + 1);
+
+      const dayRooms = recentRooms.filter(p => {
+        const roomDate = new Date(p.room.createdAt);
+        return roomDate >= date && roomDate < nextDate;
+      });
+
+      let dayQuestions = 0;
+      let dayCorrect = 0;
+      let dayScore = 0;
+
+      dayRooms.forEach(participant => {
+        const questionCount = participant.room.gameSessions.length;
+        dayQuestions += questionCount;
+        dayCorrect += participant.score; // Skor = doğru cevap sayısı
+        dayScore += participant.score;
+      });
+
+      dailyPerformance.push({
+        date: date.toISOString().split('T')[0],
+        questions: dayQuestions,
+        correct: dayCorrect,
+        wrong: dayQuestions - dayCorrect,
+        score: dayScore,
+        successRate: dayQuestions > 0 ? ((dayCorrect / dayQuestions) * 100).toFixed(1) : 0,
+      });
+    }
+
+    // Günlük performans artışı (bugün vs dün)
+    const todayData = dailyPerformance[dailyPerformance.length - 1];
+    const yesterdayData = dailyPerformance[dailyPerformance.length - 2];
+    const dailyImprovement = yesterdayData && todayData
+      ? ((parseFloat(todayData.successRate) - parseFloat(yesterdayData.successRate)).toFixed(1))
+      : '0.0';
+
     return {
       ...user,
       totalGames,
       wonGames,
       winRate: totalGames > 0 ? ((wonGames / totalGames) * 100).toFixed(1) : 0,
       leaderboardPosition,
+      // Performans verileri
+      totalQuestions,
+      totalCorrectAnswers,
+      totalWrongAnswers,
+      successRate,
+      dailyPerformance,
+      dailyImprovement,
     };
   }
 }
