@@ -54,7 +54,7 @@ interface GameContextType extends GameState {
   register: (email: string, password: string, nickname: string, avatar: string, ageGroup: AgeGroup) => Promise<void>;
   convertGuestToUser: (email: string, password: string, nickname: string, avatar: string, ageGroup: AgeGroup) => Promise<void>;
   logout: () => Promise<void>;
-  createRoom: () => void;
+  createRoom: (difficultyLevel?: number, adventureMode?: boolean) => void;
   joinRoom: (roomId: string) => Promise<void>;
   submitAnswer: (answer: number) => void;
   resetGame: () => void;
@@ -174,6 +174,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const newSocket = io(SOCKET_URL, {
         transports: ['websocket'],
         reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 5,
       });
 
       newSocket.on('connect', () => {
@@ -202,8 +205,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log('Kullanıcı ID alındı:', data.userId);
       });
 
-      newSocket.on('disconnect', () => {
-        console.log('Socket bağlantısı kesildi');
+      newSocket.on('disconnect', (reason) => {
+        console.log('Socket bağlantısı kesildi, sebep:', reason);
+        // Otomatik yeniden bağlanma zaten aktif (reconnection: true)
       });
 
       // Socket hata event'leri
@@ -215,7 +219,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Socket bağlantı durumu
       newSocket.on('connect_error', (error) => {
         console.error('❌ Socket bağlantı hatası:', error);
-        alert('Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin.');
+        console.error('❌ Socket URL:', SOCKET_URL);
+        // Alert'i kaldırdık, sadece log
+        // alert('Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin.');
       });
 
       newSocket.on('roomCreated', (data: { roomId: string }) => {
@@ -225,9 +231,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       newSocket.on('roomJoined', (data: { roomCode: string; players: Player[] }) => {
         console.log('✅ roomJoined event alındı:', data);
+        console.log('📝 roomId güncelleniyor:', data.roomCode);
         setRoomId(data.roomCode);
         setPlayers(data.players);
         setGameStatus('waiting');
+        console.log('✅ roomId ve players güncellendi, gameStatus: waiting');
       });
 
       newSocket.on('playerJoined', (data: { players: Player[] }) => {
@@ -584,7 +592,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const createRoom = async (difficultyLevel: number = 0) => {
+  const createRoom = async (difficultyLevel: number = 0, adventureMode: boolean = false) => {
     if (!socket || !user || !ageGroup || !userId) return;
 
     try {
@@ -606,6 +614,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           hostId: userId,
           ageGroup,
           difficultyLevel: validDifficultyLevel,
+          adventureMode: adventureMode,
         }),
       });
 
@@ -617,11 +626,27 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const data = await response.json();
       const roomCode = data.data.code;
 
-      // Socket ile odaya bağlan
-      socket.emit('joinRoom', {
-        roomCode,
-        userId: userId,
-      });
+      console.log('✅ Oda oluşturuldu, roomCode:', roomCode);
+      console.log('🔌 Socket durumu:', socket.connected ? 'Bağlı' : 'Bağlı değil');
+
+      // Socket bağlı değilse bekle
+      if (!socket.connected) {
+        console.log('⚠️ Socket bağlı değil, bağlantı bekleniyor...');
+        socket.once('connect', () => {
+          console.log('✅ Socket bağlandı, joinRoom gönderiliyor');
+          socket.emit('joinRoom', {
+            roomCode,
+            userId: userId,
+          });
+        });
+      } else {
+        // Socket ile odaya bağlan
+        console.log('📤 joinRoom event gönderiliyor:', { roomCode, userId });
+        socket.emit('joinRoom', {
+          roomCode,
+          userId: userId,
+        });
+      }
     } catch (error) {
       console.error('Oda oluşturma hatası:', error);
       alert(error instanceof Error ? error.message : 'Oda oluşturulamadı');

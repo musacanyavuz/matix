@@ -109,6 +109,8 @@ async function addBotToRoom(io, roomCode, bot, activeGames) {
     // Bot'u odaya katıl
     const room = await roomService.joinRoom(roomCode, botUser.id);
     
+    console.log(`🤖 Bot odaya katıldı: ${roomCode}, Bot: ${botUser.nickname}, Oda adventureMode: ${room.adventureMode}`);
+    
     // Odaya katıldığını bildir
     io.to(roomCode).emit('playerJoined', {
       players: room.participants.map((p) => ({
@@ -120,70 +122,107 @@ async function addBotToRoom(io, roomCode, bot, activeGames) {
     });
     
     // En az 2 oyuncu varsa (bot dahil) oyun başlat
+    // Sadece ilk bot eklendiğinde oyunu başlat (diğer botlar için oyun zaten başlamış olmalı)
+    console.log(`🔍 addBotToRoom: Oda ${roomCode}, Oyuncu sayısı: ${room.participants.length}, Oyun başlamış mı: ${activeGames.has(roomCode)}`);
+    console.log(`🔍 addBotToRoom: Oda adventureMode: ${room.adventureMode}, difficultyLevel: ${room.difficultyLevel}`);
+    
+    // Debug: Her participant'ın isGuest değerini kontrol et
+    console.log(`🔍 DEBUG: Participants isGuest değerleri:`, room.participants.map(p => ({
+      userId: p.userId,
+      nickname: p.user.nickname,
+      isGuest: p.user.isGuest,
+      isGuestType: typeof p.user.isGuest,
+    })));
+    
     if (room.participants.length >= 2) {
       // Oyun zaten başlamış mı kontrol et
       if (!activeGames.has(roomCode)) {
-        console.log(`Bot eklendi, ${room.participants.length} oyuncu hazır, oyun başlatılıyor: ${roomCode}`);
-        setTimeout(async () => {
-          try {
-            // Oyun durumunu başlat
-            activeGames.set(roomCode, {
-              questionNumber: 1,
-              currentQuestion: null,
-              answers: {},
-              participants: room.participants.map((p) => ({
-                userId: p.userId,
-                score: 0,
-                isBot: p.user.id === botUser.id,
-              })),
-              ageGroup: room.ageGroup || 'grade1',
-              botDifficulty: bot.difficulty,
-              botUserId: botUser.id,
-            });
-
-            // Skorları sıfırla
-            for (const participant of room.participants) {
-              await roomService.updateParticipantScore(room.id, participant.userId, -participant.score);
-            }
-
-            // Oyun başladı bildir
-            io.to(roomCode).emit('gameStarted');
-
-            // İlk soruyu gönder ve bot'un cevap vermesini başlat
-            setTimeout(async () => {
-              // Soruyu gönder
-              const { generateQuestion } = require('../utils/gameLogic');
-              const difficultyLevel = room.difficultyLevel || 0;
-              const question = generateQuestion(room.ageGroup || 'grade1', difficultyLevel);
-              
-              // Oyun durumunu güncelle
-              activeGames.get(roomCode).currentQuestion = question;
-              activeGames.get(roomCode).answers = {};
-              
-              // Veritabanına kaydet
-              await roomService.createGameSession(room.id, question.question, question.correctAnswer);
-              
-              // Soruyu gönder
-              const gameState = activeGames.get(roomCode);
-              console.log(`Soru gönderiliyor (${gameState.questionNumber}): ${question.question}`);
-              io.to(roomCode).emit('newQuestion', {
-                question: question.question,
-                options: question.options,
-                correctAnswer: question.correctAnswer,
-                questionNumber: gameState.questionNumber,
+        // Sadece ilk bot eklendiğinde oyunu başlat
+        // Bot kontrolü: isGuest = true olan kullanıcılar bot'tur (bot'lar misafir olarak oluşturulur)
+        const realPlayerCount = room.participants.filter(p => !p.user.isGuest).length;
+        const botCount = room.participants.filter(p => p.user.isGuest).length;
+        
+        // Normal modda: 1 bot + 1 gerçek oyuncu = 2 oyuncu
+        // Macera modda: 3 bot + 1 gerçek oyuncu = 4 oyuncu
+        const targetBotCount = room.adventureMode ? 3 : 1;
+        console.log(`🔍 addBotToRoom: targetBotCount: ${targetBotCount}, botCount: ${botCount}, realPlayerCount: ${realPlayerCount}`);
+        
+        // Hedef bot sayısına ulaşıldıysa oyunu başlat
+        console.log(`🔍 Bot kontrolü: Hedef: ${targetBotCount}, Mevcut: ${botCount}, Gerçek: ${realPlayerCount}, Oyun başlamış mı: ${activeGames.has(roomCode)}`);
+        console.log(`🔍 Bot kontrolü: Koşul kontrolü - botCount >= targetBotCount: ${botCount >= targetBotCount}, realPlayerCount >= 1: ${realPlayerCount >= 1}`);
+        if (botCount >= targetBotCount && realPlayerCount >= 1) {
+          console.log(`✅ Bot eklendi, ${room.participants.length} oyuncu hazır (${realPlayerCount} gerçek, ${botCount} bot), oyun başlatılıyor: ${roomCode}`);
+          console.log(`⏰ 2 saniye sonra oyun başlatılacak: ${roomCode}`);
+          setTimeout(async () => {
+            console.log(`🚀 Oyun başlatma zamanı geldi: ${roomCode}`);
+            try {
+              // Oyun durumunu başlat
+              const gameState = {
+                questionNumber: 1,
+                currentQuestion: null,
+                answers: {},
+                participants: room.participants.map((p) => ({
+                  userId: p.userId,
+                  score: 0,
+                  isBot: p.user.isGuest || false, // Bot kontrolü: isGuest = true olanlar bot'tur
+                })),
+                ageGroup: room.ageGroup || 'grade1',
+                difficultyLevel: room.difficultyLevel || 0,
+                botDifficulty: bot.difficulty,
+                botUserId: botUser.id,
+              };
+              activeGames.set(roomCode, gameState);
+              console.log(`🎮 Oyun durumu oluşturuldu: ${roomCode}`, {
+                participants: gameState.participants.length,
+                bots: gameState.participants.filter(p => p.isBot).length,
+                realPlayers: gameState.participants.filter(p => !p.isBot).length,
               });
-              
-              // Bot'un cevap vermesini başlat
-              setTimeout(() => {
-                startBotAnswer(io, roomCode, botUser.id, bot.difficulty, activeGames);
-              }, 500);
-            }, 1000);
-          } catch (error) {
-            console.error('Bot ile oyun başlatma hatası:', error);
-            io.to(roomCode).emit('error', { message: 'Oyun başlatılamadı' });
-          }
-        }, 2000);
+
+              // Skorları sıfırla
+              for (const participant of room.participants) {
+                await roomService.updateParticipantScore(room.id, participant.userId, -participant.score);
+              }
+
+              // Oyun başladı bildir
+              console.log(`🎮 gameStarted event gönderiliyor: ${roomCode}`);
+              io.to(roomCode).emit('gameStarted', { isMidGame: false });
+              console.log(`✅ gameStarted event gönderildi: ${roomCode}`);
+
+              // İlk soruyu gönder (sendQuestion fonksiyonu bot cevaplarını da başlatacak)
+              setTimeout(async () => {
+                try {
+                  console.log(`🤖 BotService: sendQuestion çağrılmadan önce kontrol: ${roomCode}`);
+                  const gameStateCheck = activeGames.get(roomCode);
+                  if (!gameStateCheck) {
+                    console.error(`❌ BotService: Oyun durumu bulunamadı: ${roomCode}`);
+                    return;
+                  }
+                  console.log(`✅ BotService: Oyun durumu mevcut: ${roomCode}, Participants: ${gameStateCheck.participants.length}`);
+                  
+                  const socketHandler = require('../socket/socketHandler');
+                  const sendQuestionFn = socketHandler.getSendQuestion();
+                  if (sendQuestionFn) {
+                    console.log(`🤖 BotService: sendQuestion çağrılıyor: ${roomCode}`);
+                    await sendQuestionFn(io, roomCode);
+                    console.log(`✅ BotService: sendQuestion tamamlandı: ${roomCode}`);
+                  } else {
+                    console.error('❌ BotService: sendQuestion fonksiyonu bulunamadı');
+                  }
+                } catch (error) {
+                  console.error('❌ BotService: sendQuestion hatası:', error);
+                }
+              }, 1000);
+            } catch (error) {
+              console.error('Bot ile oyun başlatma hatası:', error);
+              io.to(roomCode).emit('error', { message: 'Oyun başlatılamadı' });
+            }
+          }, 2000);
+        } else {
+          console.log(`❌ Oyun başlatılmıyor: Henüz yeterli bot yok (Hedef: ${targetBotCount}, Mevcut: ${botCount}, Gerçek oyuncu: ${realPlayerCount})`);
+          console.log(`❌ Koşul kontrolü: botCount >= targetBotCount: ${botCount >= targetBotCount}, realPlayerCount >= 1: ${realPlayerCount >= 1}`);
+        }
       } else {
+        console.log(`ℹ️ Oyun zaten başlamış: ${roomCode}, sadece bot ekleniyor`);
         // Oyun zaten başlamış, sadece bot'u ekle
         const gameState = activeGames.get(roomCode);
         if (gameState) {
@@ -209,6 +248,8 @@ async function addBotToRoom(io, roomCode, bot, activeGames) {
           }
         }
       }
+    } else {
+      console.log(`ℹ️ addBotToRoom: Oyuncu sayısı yetersiz: ${room.participants.length} (en az 2 olmalı)`);
     }
     
     return botUser;

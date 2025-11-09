@@ -40,6 +40,8 @@ model Room {
   isPrivate      Boolean  @default(false) // Private room mu?
   ageGroup       String?  // Yaş grubu (age4, age5, grade1, vb.)
   difficultyLevel Int?    @default(0) // Zorluk seviyesi: -1 (Kolay), 0 (Normal), 1 (Zor)
+  adventureMode  Boolean  @default(false) // Macera modu mu?
+  currentChapter Int?     @default(1) // Macera modunda mevcut bölüm
   createdAt      DateTime @default(now())
 
   // İlişkiler

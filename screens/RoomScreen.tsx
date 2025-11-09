@@ -26,9 +26,10 @@ export const RoomScreen: React.FC = () => {
   const [joining, setJoining] = useState(false);
   const [showRoomList, setShowRoomList] = useState(false);
   const [difficultyLevel, setDifficultyLevel] = useState<number>(0); // -1: Kolay, 0: Normal, 1: Zor
+  const [gameMode, setGameMode] = useState<'normal' | 'adventure'>('normal'); // Normal veya Macera modu
 
   const handleCreateRoom = () => {
-    createRoom(difficultyLevel);
+    createRoom(difficultyLevel, gameMode === 'adventure');
   };
 
 
@@ -74,38 +75,69 @@ export const RoomScreen: React.FC = () => {
         >
           <View style={styles.content}>
             <View style={styles.actions}>
-              <View style={styles.difficultyContainer}>
-                <Text style={styles.difficultyLabel}>{t('room.difficultyLevel')}</Text>
-                <View style={styles.difficultyButtons}>
+              {/* Oyun Modu Seçimi */}
+              <View style={styles.gameModeContainer}>
+                <Text style={styles.gameModeLabel}>{t('room.gameMode')}</Text>
+                <View style={styles.gameModeButtons}>
                   <TouchableOpacity
-                    style={[styles.difficultyButton, difficultyLevel === -1 && styles.difficultyButtonActive]}
-                    onPress={() => setDifficultyLevel(-1)}
+                    style={[styles.gameModeButton, gameMode === 'normal' && styles.gameModeButtonActive]}
+                    onPress={() => setGameMode('normal')}
                   >
-                    <Text style={[styles.difficultyButtonText, difficultyLevel === -1 && styles.difficultyButtonTextActive]}>
-                      😊 {t('room.easy')}
+                    <Text style={styles.gameModeIcon}>🎮</Text>
+                    <Text style={[styles.gameModeButtonText, gameMode === 'normal' && styles.gameModeButtonTextActive]}>
+                      {t('room.normalMode')}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.difficultyButton, difficultyLevel === 0 && styles.difficultyButtonActive]}
-                    onPress={() => setDifficultyLevel(0)}
+                    style={[styles.gameModeButton, gameMode === 'adventure' && styles.gameModeButtonActive]}
+                    onPress={() => setGameMode('adventure')}
                   >
-                    <Text style={[styles.difficultyButtonText, difficultyLevel === 0 && styles.difficultyButtonTextActive]}>
-                      😐 {t('room.normal')}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.difficultyButton, difficultyLevel === 1 && styles.difficultyButtonActive]}
-                    onPress={() => setDifficultyLevel(1)}
-                  >
-                    <Text style={[styles.difficultyButtonText, difficultyLevel === 1 && styles.difficultyButtonTextActive]}>
-                      😤 {t('room.hard')}
+                    <Text style={styles.gameModeIcon}>⚔️</Text>
+                    <Text style={[styles.gameModeButtonText, gameMode === 'adventure' && styles.gameModeButtonTextActive]}>
+                      {t('room.adventureMode')}
                     </Text>
                   </TouchableOpacity>
                 </View>
+                {gameMode === 'adventure' && (
+                  <Text style={styles.adventureHint}>{t('room.adventureHint')}</Text>
+                )}
               </View>
 
+              {/* Zorluk Seviyesi Seçimi (Sadece normal modda) */}
+              {gameMode === 'normal' && (
+                <View style={styles.difficultyContainer}>
+                  <Text style={styles.difficultyLabel}>{t('room.difficultyLevel')}</Text>
+                  <View style={styles.difficultyButtons}>
+                    <TouchableOpacity
+                      style={[styles.difficultyButton, difficultyLevel === -1 && styles.difficultyButtonActive]}
+                      onPress={() => setDifficultyLevel(-1)}
+                    >
+                      <Text style={[styles.difficultyButtonText, difficultyLevel === -1 && styles.difficultyButtonTextActive]}>
+                        😊 {t('room.easy')}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.difficultyButton, difficultyLevel === 0 && styles.difficultyButtonActive]}
+                      onPress={() => setDifficultyLevel(0)}
+                    >
+                      <Text style={[styles.difficultyButtonText, difficultyLevel === 0 && styles.difficultyButtonTextActive]}>
+                        😐 {t('room.normal')}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.difficultyButton, difficultyLevel === 1 && styles.difficultyButtonActive]}
+                      onPress={() => setDifficultyLevel(1)}
+                    >
+                      <Text style={[styles.difficultyButtonText, difficultyLevel === 1 && styles.difficultyButtonTextActive]}>
+                        😤 {t('room.hard')}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+
               <Button
-                title="Yeni Oda Oluştur"
+                title={gameMode === 'adventure' ? t('room.startAdventure') : t('room.createRoom')}
                 onPress={handleCreateRoom}
                 variant="primary"
               />
@@ -135,47 +167,73 @@ export const RoomScreen: React.FC = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={true}
           bounces={true}
-          onScrollBeginDrag={onScrollBeginDrag}
-          onScrollEndDrag={onScrollEndDrag}
-          onMomentumScrollEnd={onMomentumScrollEnd}
-          scrollEventThrottle={16}
         >
           <View style={styles.content}>
         {!roomId ? (
           <View style={styles.actions}>
-            {/* Zorluk Seviyesi Seçimi */}
-            <View style={styles.difficultyContainer}>
-              <Text style={styles.difficultyLabel}>{t('room.difficultyLevel')}</Text>
-              <View style={styles.difficultyButtons}>
+            {/* Oyun Modu Seçimi */}
+            <View style={styles.gameModeContainer}>
+              <Text style={styles.gameModeLabel}>{t('room.gameMode')}</Text>
+              <View style={styles.gameModeButtons}>
                 <TouchableOpacity
-                  style={[styles.difficultyButton, difficultyLevel === -1 && styles.difficultyButtonActive]}
-                  onPress={() => setDifficultyLevel(-1)}
+                  style={[styles.gameModeButton, gameMode === 'normal' && styles.gameModeButtonActive]}
+                  onPress={() => setGameMode('normal')}
                 >
-                  <Text style={[styles.difficultyButtonText, difficultyLevel === -1 && styles.difficultyButtonTextActive]}>
-                    😊 {t('room.easy')}
+                  <Text style={styles.gameModeIcon}>🎮</Text>
+                  <Text style={[styles.gameModeButtonText, gameMode === 'normal' && styles.gameModeButtonTextActive]}>
+                    {t('room.normalMode')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.difficultyButton, difficultyLevel === 0 && styles.difficultyButtonActive]}
-                  onPress={() => setDifficultyLevel(0)}
+                  style={[styles.gameModeButton, gameMode === 'adventure' && styles.gameModeButtonActive]}
+                  onPress={() => setGameMode('adventure')}
                 >
-                  <Text style={[styles.difficultyButtonText, difficultyLevel === 0 && styles.difficultyButtonTextActive]}>
-                    😐 {t('room.normal')}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.difficultyButton, difficultyLevel === 1 && styles.difficultyButtonActive]}
-                  onPress={() => setDifficultyLevel(1)}
-                >
-                  <Text style={[styles.difficultyButtonText, difficultyLevel === 1 && styles.difficultyButtonTextActive]}>
-                    😤 {t('room.hard')}
+                  <Text style={styles.gameModeIcon}>⚔️</Text>
+                  <Text style={[styles.gameModeButtonText, gameMode === 'adventure' && styles.gameModeButtonTextActive]}>
+                    {t('room.adventureMode')}
                   </Text>
                 </TouchableOpacity>
               </View>
+              {gameMode === 'adventure' && (
+                <Text style={styles.adventureHint}>{t('room.adventureHint')}</Text>
+              )}
             </View>
 
+            {/* Zorluk Seviyesi Seçimi (Sadece normal modda) */}
+            {gameMode === 'normal' && (
+              <View style={styles.difficultyContainer}>
+                <Text style={styles.difficultyLabel}>{t('room.difficultyLevel')}</Text>
+                <View style={styles.difficultyButtons}>
+                  <TouchableOpacity
+                    style={[styles.difficultyButton, difficultyLevel === -1 && styles.difficultyButtonActive]}
+                    onPress={() => setDifficultyLevel(-1)}
+                  >
+                    <Text style={[styles.difficultyButtonText, difficultyLevel === -1 && styles.difficultyButtonTextActive]}>
+                      😊 {t('room.easy')}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.difficultyButton, difficultyLevel === 0 && styles.difficultyButtonActive]}
+                    onPress={() => setDifficultyLevel(0)}
+                  >
+                    <Text style={[styles.difficultyButtonText, difficultyLevel === 0 && styles.difficultyButtonTextActive]}>
+                      😐 {t('room.normal')}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.difficultyButton, difficultyLevel === 1 && styles.difficultyButtonActive]}
+                    onPress={() => setDifficultyLevel(1)}
+                  >
+                    <Text style={[styles.difficultyButtonText, difficultyLevel === 1 && styles.difficultyButtonTextActive]}>
+                      😤 {t('room.hard')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             <Button
-              title="Yeni Oda Oluştur"
+              title={gameMode === 'adventure' ? t('room.startAdventure') : t('room.createRoom')}
               onPress={handleCreateRoom}
               variant="primary"
             />
@@ -557,6 +615,65 @@ const styles = StyleSheet.create({
   difficultyButtonTextActive: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  gameModeContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  gameModeLabel: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  gameModeButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  gameModeButton: {
+    flex: 1,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+    minHeight: 100,
+  },
+  gameModeButtonActive: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  gameModeIcon: {
+    fontSize: 40,
+    marginBottom: 8,
+  },
+  gameModeButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+    textAlign: 'center',
+  },
+  gameModeButtonTextActive: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  adventureHint: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 10,
+    fontStyle: 'italic',
   },
 });
 

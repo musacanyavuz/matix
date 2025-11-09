@@ -17,7 +17,7 @@ class RoomService {
   /**
    * Yeni oda oluştur
    */
-  async createRoom(hostId, ageGroup = null, isPrivate = false, difficultyLevel = 0) {
+  async createRoom(hostId, ageGroup = null, isPrivate = false, difficultyLevel = 0, adventureMode = false) {
     let code;
     let isUnique = false;
 
@@ -39,6 +39,8 @@ class RoomService {
         isPrivate: isPrivate,
         ageGroup,
         difficultyLevel: difficultyLevel || 0,
+        adventureMode: adventureMode || false,
+        currentChapter: adventureMode ? 1 : null,
       },
       include: {
         host: {
@@ -69,6 +71,7 @@ class RoomService {
                 id: true,
                 nickname: true,
                 avatar: true,
+                isGuest: true, // Bot kontrolü için gerekli
               },
             },
           },
@@ -130,6 +133,7 @@ class RoomService {
                 nickname: true,
                 avatar: true,
                 totalScore: true,
+                isGuest: true, // Bot kontrolü için gerekli
               },
             },
           },
@@ -443,6 +447,7 @@ class RoomService {
                 id: true,
                 nickname: true,
                 avatar: true,
+                isGuest: true, // Bot kontrolü için gerekli
               },
             },
           },
@@ -507,6 +512,16 @@ class RoomService {
     });
 
     return updated;
+  }
+
+  /**
+   * Macera modunda bölümü güncelle
+   */
+  async updateRoomChapter(roomCode, newChapter) {
+    await prisma.room.update({
+      where: { code: roomCode },
+      data: { currentChapter: newChapter },
+    });
   }
 
   /**
