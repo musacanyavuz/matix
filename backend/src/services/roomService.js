@@ -17,7 +17,7 @@ class RoomService {
   /**
    * Yeni oda oluştur
    */
-  async createRoom(hostId, ageGroup = null, isPrivate = false, difficultyLevel = 0, adventureMode = false) {
+  async createRoom(hostId, ageGroup = null, isPrivate = false, difficultyLevel = 0, adventureMode = false, chapter = 1) {
     let code;
     let isUnique = false;
 
@@ -40,7 +40,7 @@ class RoomService {
         ageGroup,
         difficultyLevel: difficultyLevel || 0,
         adventureMode: adventureMode || false,
-        currentChapter: adventureMode ? 1 : null,
+        currentChapter: adventureMode ? (chapter || 1) : null,
       },
       include: {
         host: {

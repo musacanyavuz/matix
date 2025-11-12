@@ -592,7 +592,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const createRoom = async (difficultyLevel: number = 0, adventureMode: boolean = false) => {
+  const createRoom = async (difficultyLevel: number = 0, adventureMode: boolean = false, chapter: number = 1) => {
     if (!socket || !user || !ageGroup || !userId) return;
 
     try {
@@ -615,6 +615,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           ageGroup,
           difficultyLevel: validDifficultyLevel,
           adventureMode: adventureMode,
+          chapter: adventureMode ? chapter : undefined,
         }),
       });
 

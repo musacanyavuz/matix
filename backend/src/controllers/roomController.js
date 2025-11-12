@@ -13,7 +13,7 @@ class RoomController {
    */
   async createRoom(req, res, next) {
     try {
-      const { hostId, ageGroup, isPrivate, difficultyLevel, adventureMode } = req.body;
+      const { hostId, ageGroup, isPrivate, difficultyLevel, adventureMode, chapter } = req.body;
 
       if (!hostId) {
         return res.status(400).json({
@@ -36,7 +36,10 @@ class RoomController {
         ? parseInt(difficultyLevel)
         : 0;
 
-      const room = await roomService.createRoom(hostId, ageGroup, isPrivate || false, validDifficultyLevel, adventureMode || false);
+      // Macera modu için chapter parametresi
+      const validChapter = adventureMode && chapter ? parseInt(chapter) : 1;
+
+      const room = await roomService.createRoom(hostId, ageGroup, isPrivate || false, validDifficultyLevel, adventureMode || false, validChapter);
 
       res.status(201).json({
         success: true,

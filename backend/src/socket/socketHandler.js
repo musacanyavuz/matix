@@ -722,6 +722,11 @@ function setupSocketHandlers(io) {
           const currentChapter = room.currentChapter || 1;
           newChapter = currentChapter + 1;
           await roomService.updateRoomChapter(roomCode, newChapter);
+          
+          // Kullanıcının adventureChapter'ını güncelle
+          const userService = require('../services/userService');
+          await userService.updateAdventureChapter(winner.userId, newChapter);
+          
           chapterProgressed = true;
           console.log(`🎉 Macera modu: Bölüm ${currentChapter} tamamlandı! Yeni bölüm: ${newChapter}`);
         }

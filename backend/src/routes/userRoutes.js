@@ -20,6 +20,9 @@ router.get('/stats/:userId', userController.getUserStats.bind(userController));
 // Kullanıcı profilini güncelle (token gereklidir)
 router.put('/profile', authenticateToken, userController.updateProfile.bind(userController));
 
+// Macera modu ilerlemesini getir (token gereklidir)
+router.get('/adventure/progress', authenticateToken, userController.getAdventureProgress.bind(userController));
+
 // Kullanıcıyı ID ile getir (en sona)
 router.get('/:id', userController.getUserById.bind(userController));
 

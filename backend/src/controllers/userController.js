@@ -133,6 +133,24 @@ class UserController {
       next(error);
     }
   }
+
+  /**
+   * Macera modu ilerlemesini getir
+   * GET /api/users/adventure/progress
+   */
+  async getAdventureProgress(req, res, next) {
+    try {
+      const userId = req.userId; // Middleware'den gelir
+      const progress = await userService.getAdventureProgress(userId);
+
+      res.json({
+        success: true,
+        data: progress,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new UserController();

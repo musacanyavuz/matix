@@ -29,7 +29,13 @@ export const RoomScreen: React.FC = () => {
   const [gameMode, setGameMode] = useState<'normal' | 'adventure'>('normal'); // Normal veya Macera modu
 
   const handleCreateRoom = () => {
-    createRoom(difficultyLevel, gameMode === 'adventure');
+    if (gameMode === 'adventure') {
+      // Macera modunda harita ekranına yönlendir
+      navigation.navigate('AdventureMap' as never);
+    } else {
+      // Normal modda direkt oda oluştur
+      createRoom(difficultyLevel, false);
+    }
   };
 
 

@@ -10,15 +10,16 @@ datasource db {
 
 // Kullanıcılar
 model User {
-  id          String   @id @default(uuid())
-  email       String?  @unique // Email (kayıtlı kullanıcılar için)
-  password    String?  // Hashed password (kayıtlı kullanıcılar için)
-  nickname    String   @unique
-  avatar      String
-  totalScore  Int      @default(0)
-  isGuest     Boolean  @default(false) // Misafir kullanıcı mı?
-  lastLogin   DateTime? // Son giriş tarihi
-  createdAt   DateTime @default(now())
+  id              String   @id @default(uuid())
+  email           String?  @unique // Email (kayıtlı kullanıcılar için)
+  password        String?  // Hashed password (kayıtlı kullanıcılar için)
+  nickname        String   @unique
+  avatar          String
+  totalScore      Int      @default(0)
+  isGuest         Boolean  @default(false) // Misafir kullanıcı mı?
+  adventureChapter Int     @default(1) // Macera modunda en son ulaşılan bölüm
+  lastLogin       DateTime? // Son giriş tarihi
+  createdAt       DateTime @default(now())
 
   // İlişkiler
   hostedRooms    Room[]               @relation("HostUser")

@@ -14,6 +14,7 @@ import { ResultScreen } from './screens/ResultScreen';
 import { LeaderboardScreen } from './screens/LeaderboardScreen';
 import { PerformanceScreen } from './screens/PerformanceScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
+import { AdventureMapScreen } from './screens/AdventureMapScreen';
 import { View, ActivityIndicator, StyleSheet, TouchableOpacity, Text } from 'react-native';
 
 // Room Header Buttons Component
@@ -206,8 +207,16 @@ const AppNavigator: React.FC = () => {
         <Stack.Screen
           name="Settings"
           component={SettingsScreen}
-          options={{
+          options={{ 
             title: t('settings.title'),
+            headerBackTitle: t('common.back'),
+          }}
+        />
+        <Stack.Screen
+          name="AdventureMap"
+          component={AdventureMapScreen}
+          options={{ 
+            title: '🗺️ Macera Haritası',
             headerBackTitle: t('common.back'),
           }}
         />

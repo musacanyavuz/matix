@@ -113,6 +113,39 @@ class UserService {
   }
 
   /**
+   * Macera modu bölüm ilerlemesini güncelle
+   */
+  async updateAdventureChapter(userId, newChapter) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { adventureChapter: true },
+    });
+
+    // Sadece yeni bölüm mevcut bölümden büyükse güncelle
+    if (!user || newChapter > user.adventureChapter) {
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { adventureChapter: newChapter },
+        select: { id: true, adventureChapter: true },
+      });
+      return updatedUser;
+    }
+
+    return user;
+  }
+
+  /**
+   * Kullanıcının macera modu ilerlemesini getir
+   */
+  async getAdventureProgress(userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, adventureChapter: true },
+    });
+    return user;
+  }
+
+  /**
    * Kullanıcı istatistiklerini getir
    */
   async getUserStats(userId) {
