@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { io, Socket } from 'socket.io-client';
 import { AgeGroup } from '../constants/ageGroups';
@@ -41,6 +42,9 @@ interface GameState {
   isAnswering: boolean;
   ageGroup: AgeGroup | null;
   playerAnswers: Array<{ userId: string; answer: number }>;
+  adventureMode: boolean; // Macera modu mu?
+  chapterProgressed: boolean; // Bölüm ilerledi mi?
+  nextChapter: number | null; // Sonraki bölüm numarası
 }
 
 interface GameContextType extends GameState {
@@ -50,16 +54,29 @@ interface GameContextType extends GameState {
   setShowQuestionCountdown: (show: boolean) => void;
   isLoadingUser: boolean;
   setUser: (user: User, guestUserId?: string | null) => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, nickname: string, avatar: string, ageGroup: AgeGroup) => Promise<void>;
-  convertGuestToUser: (email: string, password: string, nickname: string, avatar: string, ageGroup: AgeGroup) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
+  register: (password: string, nickname: string, avatar: string, ageGroup: AgeGroup) => Promise<void>;
+  convertGuestToUser: (password: string, nickname: string, avatar: string, ageGroup: AgeGroup) => Promise<void>;
   logout: () => Promise<void>;
-  createRoom: (difficultyLevel?: number, adventureMode?: boolean) => void;
+  createRoom: (difficultyLevel?: number, adventureMode?: boolean, chapter?: number) => Promise<void>;
   joinRoom: (roomId: string) => Promise<void>;
   submitAnswer: (answer: number) => void;
   resetGame: () => void;
   restartGame: () => void;
   disconnect: () => void;
+  // Friend functions
+  sendFriendRequest: (receiverNickname: string) => Promise<void>;
+  acceptFriendRequest: (friendshipId: string) => Promise<void>;
+  rejectFriendRequest: (friendshipId: string) => Promise<void>;
+  getFriends: () => Promise<Array<{ id: string; nickname: string; avatar: string; totalScore: number; isOnline: boolean; currentGame: { roomCode: string; roomId: string } | null }>>;
+  getPendingRequests: () => Promise<Array<{ id: string; requester: { id: string; nickname: string; avatar: string } | null; createdAt: any }>>;
+  searchUsers: (query: string) => Promise<Array<{ id: string; nickname: string; avatar: string }>>;
+  removeFriend: (friendId: string) => Promise<void>;
+  // Room invitation functions
+  inviteFriendToRoom: (friendId: string, roomId: string) => Promise<void>;
+  getPendingRoomInvitations: () => Promise<Array<{ id: string; roomCode: string; inviter: { id: string; nickname: string; avatar: string } }>>;
+  acceptRoomInvitation: (invitationId: string) => Promise<void>;
+  rejectRoomInvitation: (invitationId: string) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -82,84 +99,130 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [showQuestionCountdown, setShowQuestionCountdown] = useState(false);
   const [playerAnswers, setPlayerAnswers] = useState<Array<{ userId: string; answer: number }>>([]);
   const [isLoadingUser, setIsLoadingUser] = useState(true); // Kullanıcı yükleniyor mu?
+  const [adventureMode, setAdventureMode] = useState(false); // Macera modu mu?
+  const [chapterProgressed, setChapterProgressed] = useState(false); // Bölüm ilerledi mi?
+  const [nextChapter, setNextChapter] = useState<number | null>(null); // Sonraki bölüm numarası
+
+  /**
+   * Auth state'ini temizle
+   */
+  const clearAuthState = async () => {
+    await AsyncStorage.removeItem('token');
+    setToken(null);
+    setIsAuthenticated(false);
+    setUserId(null);
+  };
+
+  /**
+   * Token'ı doğrula ve kullanıcı bilgisini yükle
+   */
+  const verifyAndLoadUser = async (tokenToVerify: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`${SOCKET_URL}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${tokenToVerify}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data?.user) {
+          const backendUser = data.data.user;
+          
+          // State'leri güncelle
+          setToken(tokenToVerify);
+          setIsAuthenticated(true);
+          setUserId(backendUser.id);
+          
+          // Backend'den gelen kullanıcı bilgilerini kullan
+          // Local storage'dan ageGroup bilgisini al (backend'de yoksa)
+          const userJson = await AsyncStorage.getItem('user');
+          if (userJson) {
+            const localUserData = JSON.parse(userJson);
+            const userData: User = {
+              nickname: backendUser.nickname || localUserData.nickname,
+              avatar: backendUser.avatar || localUserData.avatar,
+              ageGroup: localUserData.ageGroup || 'grade1',
+            };
+            setUserState(userData);
+            setAgeGroup(userData.ageGroup);
+          } else {
+            // Local storage'da yoksa backend'den gelen bilgileri kullan
+            const userData: User = {
+              nickname: backendUser.nickname,
+              avatar: backendUser.avatar,
+              ageGroup: 'grade1', // Varsayılan
+            };
+            setUserState(userData);
+            setAgeGroup(userData.ageGroup);
+          }
+          
+          return true;
+        }
+      }
+      
+      // Token geçersiz
+      return false;
+    } catch (error) {
+      console.error('Token doğrulama hatası:', error);
+      return false;
+    }
+  };
 
   const loadUser = async () => {
     setIsLoadingUser(true);
     try {
-      // Token'ı yükle
+      // Önce token'ı kontrol et
       const savedToken = await AsyncStorage.getItem('token');
+      
       if (savedToken) {
-        setToken(savedToken);
-        setIsAuthenticated(true);
+        // Token varsa doğrula
+        const isValid = await verifyAndLoadUser(savedToken);
         
-        // Token ile kullanıcı bilgisini al
-        try {
-          const response = await fetch(`${SOCKET_URL}/api/auth/me`, {
-            headers: {
-              'Authorization': `Bearer ${savedToken}`,
-            },
-          });
+        if (!isValid) {
+          // Token geçersizse temizle
+          await clearAuthState();
           
-          if (response.ok) {
-            const data = await response.json();
-            if (data.data?.user) {
-              const backendUser = data.data.user;
-              setUserId(backendUser.id);
-              
-              // Backend'den gelen kullanıcı bilgilerini kullan
-              // Local storage'dan ageGroup bilgisini al (backend'de yoksa)
-              const userJson = await AsyncStorage.getItem('user');
-              if (userJson) {
-                const localUserData = JSON.parse(userJson);
-                const userData: User = {
-                  nickname: backendUser.nickname || localUserData.nickname,
-                  avatar: backendUser.avatar || localUserData.avatar,
-                  ageGroup: localUserData.ageGroup || 'grade1',
-                };
-                setUserState(userData);
-                setAgeGroup(userData.ageGroup);
-              } else {
-                // Local storage'da yoksa backend'den gelen bilgileri kullan
-                const userData: User = {
-                  nickname: backendUser.nickname,
-                  avatar: backendUser.avatar,
-                  ageGroup: 'grade1', // Varsayılan
-                };
-                setUserState(userData);
-                setAgeGroup(userData.ageGroup);
-              }
-            }
-          } else {
-            // Token geçersizse sil
-            await AsyncStorage.removeItem('token');
-            setToken(null);
-            setIsAuthenticated(false);
-          }
-        } catch (error) {
-          console.error('Token doğrulama hatası:', error);
+          // Misafir kullanıcı bilgilerini yükle
+          await loadGuestUser();
         }
       } else {
         // Token yoksa misafir kullanıcı bilgilerini yükle
-        const userJson = await AsyncStorage.getItem('user');
-        const guestUserId = await AsyncStorage.getItem('guestUserId');
-        
-        if (userJson) {
-          const userData = JSON.parse(userJson);
-          setUserState(userData);
-          setAgeGroup(userData.ageGroup);
-          
-          // Misafir kullanıcı ID'si varsa yükle
-          if (guestUserId) {
-            setUserId(guestUserId);
-          }
-          
-          setIsAuthenticated(false);
-        }
+        await loadGuestUser();
       }
     } catch (error) {
       console.error('Kullanıcı bilgisi yüklenemedi:', error);
+      // Hata durumunda auth state'ini temizle
+      await clearAuthState();
+      await loadGuestUser();
     } finally {
       setIsLoadingUser(false);
+    }
+  };
+
+  /**
+   * Misafir kullanıcı bilgilerini yükle
+   */
+  const loadGuestUser = async () => {
+    try {
+      const userJson = await AsyncStorage.getItem('user');
+      const guestUserId = await AsyncStorage.getItem('guestUserId');
+      
+      if (userJson) {
+        const userData = JSON.parse(userJson);
+        setUserState(userData);
+        setAgeGroup(userData.ageGroup);
+        
+        // Misafir kullanıcı ID'si varsa yükle
+        if (guestUserId) {
+          setUserId(guestUserId);
+        }
+      }
+      
+      setIsAuthenticated(false);
+      setToken(null);
+    } catch (error) {
+      console.error('Misafir kullanıcı bilgisi yüklenemedi:', error);
     }
   };
 
@@ -168,25 +231,30 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     loadUser();
   }, []);
 
-  // Socket bağlantısını kur
+  // Socket bağlantısını kur (user veya token değiştiğinde yeniden bağlan)
   useEffect(() => {
     if (user) {
       const newSocket = io(SOCKET_URL, {
-        transports: ['websocket'],
+        transports: ['websocket', 'polling'], // WebSocket başarısız olursa polling'e geç
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
-        reconnectionAttempts: 5,
+        reconnectionAttempts: Infinity, // Sonsuz yeniden bağlanma denemesi
+        timeout: 60000, // Bağlantı timeout'u (60 saniye)
+        forceNew: false, // Mevcut bağlantıyı yeniden kullan
+        upgrade: true, // Polling'den WebSocket'e otomatik yükseltme
       });
 
       newSocket.on('connect', () => {
         console.log('✅ Socket bağlandı:', newSocket.id);
         // Kullanıcı bilgisini sunucuya gönder (token varsa ekle)
+        // Token'ı closure'dan al, state'ten değil (güncel değeri almak için)
+        const currentToken = token;
         newSocket.emit('register', {
           nickname: user.nickname,
           avatar: user.avatar,
           ageGroup: user.ageGroup,
-          token: token || undefined, // Token varsa gönder
+          token: currentToken || undefined, // Token varsa gönder
         });
       });
 
@@ -236,6 +304,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setPlayers(data.players);
         setGameStatus('waiting');
         console.log('✅ roomId ve players güncellendi, gameStatus: waiting');
+        // Oyun başlamak üzere - Game ekranına yönlendirilecek (App.tsx'teki NavigationHandler)
       });
 
       newSocket.on('playerJoined', (data: { players: Player[] }) => {
@@ -346,8 +415,39 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         ));
       });
 
-      // Oyun bitti
-      newSocket.on('endGame', (data: { leaderboard: Array<{ userId: string; nickname: string; avatar: string; score: number }> }) => {
+      // Oyun daveti
+      newSocket.on('roomInvitation', (data: { 
+        invitationId: string;
+        roomCode: string;
+        inviter: { id: string; nickname: string };
+      }) => {
+        console.log('📬 Oda daveti alındı:', data);
+        // Frontend'de bildirim gösterilebilir
+        Alert.alert(
+          'Oyun Daveti',
+          `${data.inviter.nickname} sizi oyuna davet ediyor!`,
+          [
+            { text: 'Reddet', style: 'cancel', onPress: () => {
+              if (newSocket) {
+                newSocket.emit('rejectRoomInvitation', { invitationId: data.invitationId });
+              }
+            }},
+            { text: 'Kabul Et', onPress: () => {
+              if (newSocket) {
+                // Socket event ile davet kabul et
+                newSocket.emit('acceptRoomInvitation', { invitationId: data.invitationId });
+              }
+            }},
+          ]
+        );
+      });
+
+      newSocket.on('endGame', (data: { 
+        leaderboard: Array<{ userId: string; nickname: string; avatar: string; score: number }>;
+        adventureMode?: boolean;
+        chapterProgressed?: boolean;
+        newChapter?: number;
+      }) => {
         setGameStatus('finished');
         const winnerFromLeaderboard = data.leaderboard[0];
         if (winnerFromLeaderboard) {
@@ -357,6 +457,17 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             avatar: winnerFromLeaderboard.avatar,
             score: winnerFromLeaderboard.score,
           });
+        }
+        
+        // Macera modu bölüm ilerlemesi
+        if (data.adventureMode && data.chapterProgressed && data.newChapter) {
+          console.log(`🎉 Macera modu: Bölüm ${data.newChapter - 1} tamamlandı! Yeni bölüm: ${data.newChapter}`);
+          setChapterProgressed(true);
+          setNextChapter(data.newChapter);
+          // AdventureMapScreen'e focus olduğunda ilerleme otomatik yenilenecek
+        } else {
+          setChapterProgressed(false);
+          setNextChapter(null);
         }
       });
 
@@ -372,7 +483,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         newSocket.disconnect();
       };
     }
-  }, [user]);
+  }, [user, token]); // user veya token değiştiğinde socket'i yeniden bağla
 
 
   const setUser = async (userData: User, guestUserId?: string | null) => {
@@ -394,14 +505,14 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Login fonksiyonu
-  const login = async (email: string, password: string) => {
+  const login = async (username: string, password: string) => {
     try {
       const response = await fetch(`${SOCKET_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await response.json();
@@ -432,7 +543,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Register fonksiyonu
-  const register = async (email: string, password: string, nickname: string, avatar: string, ageGroupData: AgeGroup) => {
+  const register = async (password: string, nickname: string, avatar: string, ageGroupData: AgeGroup) => {
     try {
       const response = await fetch(`${SOCKET_URL}/api/auth/register`, {
         method: 'POST',
@@ -440,7 +551,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email,
           password,
           nickname,
           avatar,
@@ -476,7 +586,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Misafir kullanıcıyı kayıtlı kullanıcıya dönüştür
-  const convertGuestToUser = async (email: string, password: string, nickname: string, avatar: string, ageGroupData: AgeGroup) => {
+  const convertGuestToUser = async (password: string, nickname: string, avatar: string, ageGroupData: AgeGroup) => {
     let guestUserId = userId;
 
     // Eğer userId yoksa, önce backend'de bir misafir kullanıcı oluştur
@@ -536,7 +646,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         },
         body: JSON.stringify({
           guestUserId: guestUserId,
-          email,
           password,
           nickname,
           avatar,
@@ -574,17 +683,22 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Logout fonksiyonu
   const logout = async () => {
     try {
-      await AsyncStorage.removeItem('token');
+      // Auth state'ini temizle
+      await clearAuthState();
+      
+      // User state'ini temizle
       await AsyncStorage.removeItem('user');
-      await AsyncStorage.removeItem('guestUserId'); // Misafir kullanıcı ID'sini de temizle
-      setToken(null);
-      setIsAuthenticated(false);
-      setUserId(null);
+      await AsyncStorage.removeItem('guestUserId');
       setUserState(null);
+      setAgeGroup(null);
+      
+      // Socket'i kapat
       if (socket) {
         socket.disconnect();
         setSocket(null);
       }
+      
+      // Oyun state'ini sıfırla
       resetGame();
     } catch (error) {
       console.error('Logout hatası:', error);
@@ -596,6 +710,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!socket || !user || !ageGroup || !userId) return;
 
     try {
+      // Adventure mode'u set et
+      setAdventureMode(adventureMode);
+      
       // API ile oda oluştur (token varsa header'a ekle)
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
@@ -757,6 +874,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setShowGameStartCountdown(false);
     setShowQuestionCountdown(false);
     setPlayerAnswers([]);
+    setAdventureMode(false);
+    setChapterProgressed(false);
+    setNextChapter(null);
     if (socket) {
       socket.emit('leaveRoom');
     }
@@ -824,6 +944,218 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     resetGame();
   };
 
+  /**
+   * API isteği yap ve 401 hatası durumunda token'ı temizle
+   */
+  const makeAuthenticatedRequest = async (
+    url: string,
+    options: RequestInit = {}
+  ): Promise<Response> => {
+    if (!isAuthenticated || !token || !userId) {
+      throw new Error('Giriş yapmanız gerekiyor');
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...options.headers,
+      },
+    });
+
+    // 401 Unauthorized - Token geçersiz
+    if (response.status === 401) {
+      console.warn('Token geçersiz, auth state temizleniyor');
+      await clearAuthState();
+      throw new Error('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.');
+    }
+
+    return response;
+  };
+
+  // Friend API functions
+  const sendFriendRequest = async (receiverNickname: string) => {
+    const response = await makeAuthenticatedRequest(`${SOCKET_URL}/api/friends/request`, {
+      method: 'POST',
+      body: JSON.stringify({ receiverNickname }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Arkadaşlık isteği gönderilemedi');
+    }
+
+    return await response.json();
+  };
+
+  const acceptFriendRequest = async (friendshipId: string) => {
+    const response = await makeAuthenticatedRequest(`${SOCKET_URL}/api/friends/accept`, {
+      method: 'POST',
+      body: JSON.stringify({ friendshipId }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Arkadaşlık isteği kabul edilemedi');
+    }
+
+    return await response.json();
+  };
+
+  const rejectFriendRequest = async (friendshipId: string) => {
+    const response = await makeAuthenticatedRequest(`${SOCKET_URL}/api/friends/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ friendshipId }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Arkadaşlık isteği reddedilemedi');
+    }
+
+    return await response.json();
+  };
+
+  const getFriends = async () => {
+    const response = await makeAuthenticatedRequest(`${SOCKET_URL}/api/friends`, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Arkadaş listesi alınamadı');
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  };
+
+  const getPendingRequests = async () => {
+    const response = await makeAuthenticatedRequest(`${SOCKET_URL}/api/friends/pending`, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Bekleyen istekler alınamadı');
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  };
+
+  const searchUsers = async (query: string) => {
+    const response = await makeAuthenticatedRequest(`${SOCKET_URL}/api/friends/search?q=${encodeURIComponent(query)}`, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Kullanıcılar aranamadı');
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  };
+
+  const removeFriend = async (friendId: string) => {
+    const response = await makeAuthenticatedRequest(`${SOCKET_URL}/api/friends/${friendId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Arkadaş kaldırılamadı');
+    }
+
+    return await response.json();
+  };
+
+  // Room invitation API functions
+  const inviteFriendToRoom = async (friendId: string, roomId: string) => {
+    if (!isAuthenticated || !token || !userId) {
+      throw new Error('Giriş yapmanız gerekiyor');
+    }
+
+    if (!socket) {
+      throw new Error('Socket bağlantısı yok');
+    }
+
+    // Socket event ile davet gönder
+    return new Promise((resolve, reject) => {
+      socket.emit('inviteFriendToRoom', { friendId, roomId });
+      
+      socket.once('invitationSent', (data) => {
+        resolve(data);
+      });
+      
+      socket.once('error', (error) => {
+        reject(new Error(error.message || 'Davet gönderilemedi'));
+      });
+    });
+  };
+
+  const getPendingRoomInvitations = async () => {
+    const response = await makeAuthenticatedRequest(`${SOCKET_URL}/api/rooms/pending-invitations`, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Bekleyen davetler alınamadı');
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  };
+
+  const acceptRoomInvitation = async (invitationId: string) => {
+    if (!isAuthenticated || !token || !userId) {
+      throw new Error('Giriş yapmanız gerekiyor');
+    }
+
+    if (!socket) {
+      throw new Error('Socket bağlantısı yok');
+    }
+
+    // Socket event ile davet kabul et
+    return new Promise((resolve, reject) => {
+      socket.emit('acceptRoomInvitation', { invitationId });
+      
+      socket.once('roomJoined', (data) => {
+        resolve(data);
+      });
+      
+      socket.once('error', (error) => {
+        reject(new Error(error.message || 'Davet kabul edilemedi'));
+      });
+    });
+  };
+
+  const rejectRoomInvitation = async (invitationId: string) => {
+    if (!isAuthenticated || !token || !userId) {
+      throw new Error('Giriş yapmanız gerekiyor');
+    }
+
+    if (!socket) {
+      throw new Error('Socket bağlantısı yok');
+    }
+
+    // Socket event ile davet reddet
+    return new Promise((resolve, reject) => {
+      socket.emit('rejectRoomInvitation', { invitationId });
+      
+      socket.once('invitationRejected', (data) => {
+        resolve(data);
+      });
+      
+      socket.once('error', (error) => {
+        reject(new Error(error.message || 'Davet reddedilemedi'));
+      });
+    });
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -840,6 +1172,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         winner,
         isAnswering,
         ageGroup,
+        adventureMode,
+        chapterProgressed,
+        nextChapter,
         showGameStartCountdown,
         setShowGameStartCountdown,
         showQuestionCountdown,
@@ -857,6 +1192,17 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         resetGame,
         restartGame,
         disconnect,
+        sendFriendRequest,
+        acceptFriendRequest,
+        rejectFriendRequest,
+        getFriends,
+        getPendingRequests,
+        searchUsers,
+        removeFriend,
+        inviteFriendToRoom,
+        getPendingRoomInvitations,
+        acceptRoomInvitation,
+        rejectRoomInvitation,
         clearAllData,
       }}
     >

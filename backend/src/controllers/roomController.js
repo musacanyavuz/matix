@@ -101,6 +101,108 @@ class RoomController {
   }
 
   /**
+   * Arkadaşı oyuna davet et
+   * POST /api/rooms/invite-friend
+   */
+  async inviteFriendToRoom(req, res, next) {
+    try {
+      const { friendId, roomId } = req.body;
+      const inviterId = req.userId;
+
+      if (!friendId || !roomId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Arkadaş ID ve oda ID gereklidir',
+        });
+      }
+
+      const invitation = await roomService.inviteFriendToRoom(inviterId, friendId, roomId);
+
+      res.status(201).json({
+        success: true,
+        data: invitation,
+        message: 'Arkadaş oyuna davet edildi',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Oda davetini kabul et
+   * POST /api/rooms/accept-invitation
+   */
+  async acceptRoomInvitation(req, res, next) {
+    try {
+      const { invitationId } = req.body;
+      const inviteeId = req.userId;
+
+      if (!invitationId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Davet ID gereklidir',
+        });
+      }
+
+      const room = await roomService.acceptRoomInvitation(invitationId, inviteeId);
+
+      res.json({
+        success: true,
+        data: room,
+        message: 'Davet kabul edildi',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Oda davetini reddet
+   * POST /api/rooms/reject-invitation
+   */
+  async rejectRoomInvitation(req, res, next) {
+    try {
+      const { invitationId } = req.body;
+      const inviteeId = req.userId;
+
+      if (!invitationId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Davet ID gereklidir',
+        });
+      }
+
+      await roomService.rejectRoomInvitation(invitationId, inviteeId);
+
+      res.json({
+        success: true,
+        message: 'Davet reddedildi',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Bekleyen oda davetlerini getir
+   * GET /api/rooms/pending-invitations
+   */
+  async getPendingRoomInvitations(req, res, next) {
+    try {
+      const inviteeId = req.userId;
+      const invitations = await roomService.getPendingRoomInvitations(inviteeId);
+
+      res.json({
+        success: true,
+        data: invitations,
+        message: 'Bekleyen davetler başarıyla alındı',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Aktif odaları listele
    * GET /api/rooms
    */

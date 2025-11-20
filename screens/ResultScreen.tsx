@@ -7,7 +7,7 @@ import { PlayerCard } from '../components/PlayerCard';
 
 export const ResultScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { user, players, winner, resetGame, restartGame, disconnect, roomId } = useGame();
+  const { user, players, winner, resetGame, restartGame, disconnect, roomId, adventureMode, chapterProgressed, nextChapter } = useGame();
 
   const currentUser = players.find((p) => p.nickname === user?.nickname);
   const isWinner = winner?.nickname === user?.nickname;
@@ -32,7 +32,24 @@ export const ResultScreen: React.FC = () => {
   const handleGoHome = () => {
     resetGame();
     disconnect();
-    (navigation as any).navigate('Room');
+    // Macera modunda ise AdventureMapScreen'e, değilse Room'a yönlendir
+    if (adventureMode) {
+      (navigation as any).navigate('AdventureMap');
+    } else {
+      (navigation as any).navigate('Room');
+    }
+  };
+
+  const handleNextChapter = async () => {
+    if (!nextChapter) return;
+    
+    resetGame();
+    disconnect();
+    
+    // AdventureMapScreen'e yönlendir ve sonraki bölümü başlat
+    (navigation as any).navigate('AdventureMap', { 
+      startChapter: nextChapter 
+    });
   };
 
   return (
@@ -87,6 +104,18 @@ export const ResultScreen: React.FC = () => {
         </View>
 
         <View style={styles.actions}>
+          {/* Macera modunda ve bölüm ilerlediyse "Sonraki Bölüme Geç" butonu */}
+          {adventureMode && chapterProgressed && nextChapter && (
+            <>
+              <Button
+                title={`➡️ Sonraki Bölüme Geç (Bölüm ${nextChapter})`}
+                onPress={handleNextChapter}
+                variant="primary"
+              />
+              <View style={styles.buttonSpacing} />
+            </>
+          )}
+          
           <Button
             title="Yeniden Oyna"
             onPress={handlePlayAgain}

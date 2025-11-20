@@ -49,6 +49,9 @@ function setupSocketHandlers(io) {
             socket.nickname = user.nickname;
             isAuthenticated = true;
 
+            // Online durumunu güncelle
+            await userService.setUserOnline(user.id);
+
             // Client'a userId'yi gönder
             socket.emit('registered', { userId: user.id });
 
@@ -102,6 +105,9 @@ function setupSocketHandlers(io) {
         console.log(`✅ Odaya katıldı: ${roomCode}, Oyuncu sayısı: ${room.participants.length}`);
         currentRoomCode = roomCode;
         currentUserId = userId;
+
+        // Aktif oyun bilgisini güncelle
+        await userService.setUserCurrentRoom(userId, room.id);
 
         // Socket room'a katıl
         socket.join(roomCode);
@@ -749,6 +755,13 @@ function setupSocketHandlers(io) {
         questionTimers.delete(roomCode);
       }
       
+      // Tüm gerçek oyuncuların aktif oyun bilgisini temizle
+      for (const participant of gameState.participants) {
+        if (!participant.isBot) {
+          await userService.setUserCurrentRoom(participant.userId, null);
+        }
+      }
+
       // Oyun bittikten sonra odayı kontrol et - sadece botlar kaldıysa temizle
       const updatedRoom = await roomService.getRoomByCode(roomCode);
       if (updatedRoom) {
@@ -780,6 +793,9 @@ function setupSocketHandlers(io) {
     socket.on('leaveRoom', async () => {
       if (currentRoomCode && currentUserId) {
         try {
+          // Aktif oyun bilgisini temizle
+          await userService.setUserCurrentRoom(currentUserId, null);
+          
           // Oda katılımcısını kaldır
           await roomService.removeParticipant(currentRoomCode, currentUserId);
           
@@ -863,6 +879,9 @@ function setupSocketHandlers(io) {
             }
           }
           
+          // Aktif oyun bilgisini temizle
+          await userService.setUserCurrentRoom(currentUserId, null);
+          
           socket.leave(currentRoomCode);
           console.log(`${currentUserId} odadan ayrıldı: ${currentRoomCode}`);
         } catch (error) {
@@ -872,10 +891,103 @@ function setupSocketHandlers(io) {
     });
 
     /**
+     * Arkadaşı oyuna davet et (socket event)
+     */
+    socket.on('inviteFriendToRoom', async (data) => {
+      try {
+        const { friendId, roomId } = data;
+        
+        if (!friendId || !roomId || !currentUserId) {
+          socket.emit('error', { message: 'Arkadaş ID ve oda ID gereklidir' });
+          return;
+        }
+
+        const invitation = await roomService.inviteFriendToRoom(currentUserId, friendId, roomId);
+        
+        // Davet edilen kullanıcıya bildir (eğer online ise)
+        io.emit('roomInvitation', {
+          invitationId: invitation.id,
+          roomCode: invitation.roomCode,
+          inviter: {
+            id: currentUserId,
+            nickname: socket.nickname,
+          },
+        });
+
+        socket.emit('invitationSent', { success: true, invitation });
+      } catch (error) {
+        console.error('Arkadaş davet hatası:', error);
+        socket.emit('error', { message: error.message || 'Davet gönderilemedi' });
+      }
+    });
+
+    /**
+     * Oda davetini kabul et (socket event)
+     */
+    socket.on('acceptRoomInvitation', async (data) => {
+      try {
+        const { invitationId } = data;
+        
+        if (!invitationId || !currentUserId) {
+          socket.emit('error', { message: 'Davet ID gereklidir' });
+          return;
+        }
+
+        const room = await roomService.acceptRoomInvitation(invitationId, currentUserId);
+        
+        // Odaya katıl
+        currentRoomCode = room.code;
+        socket.join(room.code);
+        
+        // Aktif oyun bilgisini güncelle
+        await userService.setUserCurrentRoom(currentUserId, room.id);
+
+        socket.emit('roomJoined', {
+          roomCode: room.code,
+          players: room.participants.map((p) => ({
+            id: p.user.id,
+            nickname: p.user.nickname,
+            avatar: p.user.avatar,
+            score: p.score,
+          })),
+        });
+      } catch (error) {
+        console.error('Davet kabul hatası:', error);
+        socket.emit('error', { message: error.message || 'Davet kabul edilemedi' });
+      }
+    });
+
+    /**
+     * Oda davetini reddet (socket event)
+     */
+    socket.on('rejectRoomInvitation', async (data) => {
+      try {
+        const { invitationId } = data;
+        
+        if (!invitationId || !currentUserId) {
+          socket.emit('error', { message: 'Davet ID gereklidir' });
+          return;
+        }
+
+        await roomService.rejectRoomInvitation(invitationId, currentUserId);
+        socket.emit('invitationRejected', { success: true });
+      } catch (error) {
+        console.error('Davet reddet hatası:', error);
+        socket.emit('error', { message: error.message || 'Davet reddedilemedi' });
+      }
+    });
+
+    /**
      * Bağlantı kesildi
      */
     socket.on('disconnect', async () => {
       console.log(`Kullanıcı ayrıldı: ${socket.id}`);
+      
+      // Offline durumunu güncelle (sadece kayıtlı kullanıcılar için)
+      if (currentUserId && isAuthenticated) {
+        await userService.setUserOffline(currentUserId);
+      }
+      
       if (currentRoomCode && currentUserId) {
         try {
           // Oda katılımcısını kaldır

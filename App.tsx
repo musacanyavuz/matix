@@ -15,14 +15,26 @@ import { LeaderboardScreen } from './screens/LeaderboardScreen';
 import { PerformanceScreen } from './screens/PerformanceScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { AdventureMapScreen } from './screens/AdventureMapScreen';
+import { FriendListScreen } from './screens/FriendListScreen';
+import { AddFriendScreen } from './screens/AddFriendScreen';
+import { FriendRequestsScreen } from './screens/FriendRequestsScreen';
+import { HomeScreen } from './screens/HomeScreen';
 import { View, ActivityIndicator, StyleSheet, TouchableOpacity, Text } from 'react-native';
 
 // Room Header Buttons Component
 const RoomHeaderButtons: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const { user } = useGame();
+  const { user, isAuthenticated } = useGame();
 
   return (
     <View style={headerButtonStyles.container}>
+      {isAuthenticated && (
+        <TouchableOpacity
+          style={headerButtonStyles.button}
+          onPress={() => navigation.navigate('FriendList')}
+        >
+          <Text style={headerButtonStyles.icon}>👥</Text>
+        </TouchableOpacity>
+      )}
       <TouchableOpacity
         style={headerButtonStyles.button}
         onPress={() => navigation.navigate('Profile')}
@@ -78,7 +90,8 @@ const NavigationHandler: React.FC = () => {
       return;
     }
 
-    if (gameStatus === 'playing') {
+    if (gameStatus === 'playing' || gameStatus === 'waiting') {
+      // Oyun başladı veya bekleniyor - Game ekranına yönlendir
       navigationRef.current?.navigate('Game' as never);
     } else if (gameStatus === 'finished') {
       navigationRef.current?.navigate('Result' as never);
@@ -92,7 +105,7 @@ const NavigationHandler: React.FC = () => {
 
 // Navigasyon yönlendirmesi için wrapper component
 const AppNavigator: React.FC = () => {
-  const { user, isLoadingUser } = useGame();
+  const { user, isLoadingUser, isAuthenticated } = useGame();
   const { t, language } = useLanguage();
   const navigationRef = React.useRef<any>(null);
 
@@ -113,6 +126,10 @@ const AppNavigator: React.FC = () => {
     );
   }
 
+  // Login olmuş kullanıcıyı Home ekranına yönlendir, misafir kullanıcıyı Room'a
+  // isAuthenticated true ise kayıtlı kullanıcı, user varsa misafir veya kayıtlı
+  const initialRoute = isAuthenticated ? 'Home' : (user ? 'Room' : 'Welcome');
+
   return (
     <>
       <NavigationHandler />
@@ -126,8 +143,17 @@ const AppNavigator: React.FC = () => {
             fontWeight: 'bold',
           },
         }}
-        initialRouteName={user ? 'Room' : 'Welcome'}
+        initialRouteName={initialRoute}
       >
+        <Stack.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{ 
+            headerShown: true,
+            title: '🏠 Ana Sayfa',
+            headerBackTitle: t('common.back'),
+          }}
+        />
         <Stack.Screen
           name="Welcome"
           component={WelcomeScreen}
@@ -217,6 +243,30 @@ const AppNavigator: React.FC = () => {
           component={AdventureMapScreen}
           options={{ 
             title: '🗺️ Macera Haritası',
+            headerBackTitle: t('common.back'),
+          }}
+        />
+        <Stack.Screen
+          name="FriendList"
+          component={FriendListScreen}
+          options={{ 
+            title: '👥 Arkadaşlarım',
+            headerBackTitle: t('common.back'),
+          }}
+        />
+        <Stack.Screen
+          name="AddFriend"
+          component={AddFriendScreen}
+          options={{ 
+            title: '➕ Arkadaş Ekle',
+            headerBackTitle: t('common.back'),
+          }}
+        />
+        <Stack.Screen
+          name="FriendRequests"
+          component={FriendRequestsScreen}
+          options={{ 
+            title: '📬 Bekleyen İstekler',
             headerBackTitle: t('common.back'),
           }}
         />

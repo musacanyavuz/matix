@@ -33,6 +33,10 @@ const io = new Server(server, {
     methods: ['GET', 'POST'],
     credentials: true,
   },
+  pingTimeout: 60000, // 60 saniye (mobil cihazlar için daha uzun)
+  pingInterval: 25000, // 25 saniye (ping gönderme aralığı)
+  transports: ['websocket', 'polling'], // WebSocket ve polling desteği
+  allowEIO3: true, // Eski Engine.IO versiyonları için uyumluluk
 });
 
 // Middleware

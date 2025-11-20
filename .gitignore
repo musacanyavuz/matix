@@ -4,10 +4,13 @@ node_modules/
 dist/
 npm-debug.*
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
 *.mobileprovision
+keystore.properties
 *.orig.*
 web-build/
 .DS_Store
+backend/matix-573eb-firebase-adminsdk-fbsvc-e2949ac1c0.json

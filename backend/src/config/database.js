@@ -1,18 +1,15 @@
 /**
- * Prisma Database Client
+ * Firebase Firestore Database Client
  * Veritabanı bağlantısını yönetir
+ * 
+ * NOT: Prisma'dan Firebase'e geçiş yapıldı.
+ * Artık Prisma yerine Firebase Firestore kullanılıyor.
  */
 
-const { PrismaClient } = require('@prisma/client');
+const { getFirestore } = require('./firebase');
 
-const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-});
+// Firebase'i başlat (ilk kullanımda)
+const db = getFirestore();
 
-// Graceful shutdown
-process.on('beforeExit', async () => {
-  await prisma.$disconnect();
-});
-
-module.exports = prisma;
+module.exports = db;
 

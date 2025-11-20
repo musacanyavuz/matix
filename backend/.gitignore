@@ -5,3 +5,7 @@ node_modules/
 dist/
 build/
 
+# Firebase Service Account Key (güvenlik için)
+firebase-service-account.json
+**/firebase-service-account.json
+

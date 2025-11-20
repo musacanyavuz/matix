@@ -1,9 +1,11 @@
 /**
  * User Service
- * Kullanıcı işlemlerini yönetir
+ * Kullanıcı işlemlerini yönetir (Firebase Firestore)
  */
 
-const prisma = require('../config/database');
+const { v4: uuidv4 } = require('uuid');
+const db = require('../config/database');
+const { admin } = require('../config/firebase');
 
 class UserService {
   /**
@@ -11,18 +13,33 @@ class UserService {
    */
   async createUser(nickname, avatar, isGuest = true) {
     try {
-      const user = await prisma.user.create({
-        data: {
-          nickname,
-          avatar,
-          isGuest: isGuest, // Misafir kullanıcılar için true
-        },
-      });
-      return user;
-    } catch (error) {
-      if (error.code === 'P2002') {
+      // Nickname unique kontrolü
+      const existingUser = await this.getUserByNickname(nickname);
+      if (existingUser) {
         throw new Error('Bu takma ad zaten kullanılıyor');
       }
+
+      const userId = uuidv4();
+      const now = admin.firestore.Timestamp.now();
+      
+      const userData = {
+        id: userId,
+        nickname,
+        avatar,
+        isGuest: isGuest,
+        totalScore: 0,
+        isOnline: false,
+        lastSeen: admin.firestore.Timestamp.now(),
+        currentRoomId: null,
+        adventureChapter: 1,
+        lastLogin: null,
+        createdAt: now,
+      };
+
+      await db.collection('users').doc(userId).set(userData);
+      
+      return userData;
+    } catch (error) {
       throw error;
     }
   }
@@ -31,67 +48,90 @@ class UserService {
    * Kullanıcıyı ID ile bul
    */
   async getUserById(userId) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-    return user;
+    const doc = await db.collection('users').doc(userId).get();
+    
+    if (!doc.exists) {
+      return null;
+    }
+    
+    return { id: doc.id, ...doc.data() };
   }
 
   /**
    * Kullanıcıyı nickname ile bul
    */
   async getUserByNickname(nickname) {
-    const user = await prisma.user.findUnique({
-      where: { nickname },
-    });
-    return user;
+    const snapshot = await db.collection('users')
+      .where('nickname', '==', nickname)
+      .limit(1)
+      .get();
+    
+    if (snapshot.empty) {
+      return null;
+    }
+    
+    const doc = snapshot.docs[0];
+    return { id: doc.id, ...doc.data() };
   }
 
   /**
    * Kullanıcıyı email ile bul
    */
   async getUserByEmail(email) {
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
-    return user;
+    if (!email) return null;
+    
+    const snapshot = await db.collection('users')
+      .where('email', '==', email)
+      .limit(1)
+      .get();
+    
+    if (snapshot.empty) {
+      return null;
+    }
+    
+    const doc = snapshot.docs[0];
+    return { id: doc.id, ...doc.data() };
   }
 
   /**
    * Kullanıcının toplam skorunu güncelle
    */
   async updateTotalScore(userId, additionalScore) {
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        totalScore: {
-          increment: additionalScore,
-        },
-      },
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    
+    if (!userDoc.exists) {
+      throw new Error('Kullanıcı bulunamadı');
+    }
+    
+    const currentScore = userDoc.data().totalScore || 0;
+    await userRef.update({
+      totalScore: currentScore + additionalScore,
     });
-    return user;
+    
+    const updatedDoc = await userRef.get();
+    return { id: updatedDoc.id, ...updatedDoc.data() };
   }
 
   /**
    * Global liderlik tablosu (top 10)
    */
   async getLeaderboard(limit = 10) {
-    const users = await prisma.user.findMany({
-      where: {
-        isGuest: false, // Sadece kayıtlı kullanıcılar
-      },
-      orderBy: {
-        totalScore: 'desc',
-      },
-      take: limit,
-      select: {
-        id: true,
-        nickname: true,
-        avatar: true,
-        totalScore: true,
-      },
+    const snapshot = await db.collection('users')
+      .where('isGuest', '==', false)
+      .orderBy('totalScore', 'desc')
+      .limit(limit)
+      .get();
+    
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        nickname: data.nickname,
+        avatar: data.avatar,
+        totalScore: data.totalScore || 0,
+      };
     });
-    return users;
   }
 
   /**
@@ -99,112 +139,132 @@ class UserService {
    */
   async updateProfile(userId, updates) {
     const { nickname, avatar } = updates;
-
     const updateData = {};
-    if (nickname) updateData.nickname = nickname;
-    if (avatar) updateData.avatar = avatar;
+    
+    if (nickname) {
+      // Nickname unique kontrolü
+      const existingUser = await this.getUserByNickname(nickname);
+      if (existingUser && existingUser.id !== userId) {
+        throw new Error('Bu takma ad zaten kullanılıyor');
+      }
+      updateData.nickname = nickname;
+    }
+    
+    if (avatar) {
+      updateData.avatar = avatar;
+    }
 
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: updateData,
-    });
-
-    return user;
+    await db.collection('users').doc(userId).update(updateData);
+    
+    const updatedDoc = await db.collection('users').doc(userId).get();
+    return { id: updatedDoc.id, ...updatedDoc.data() };
   }
 
   /**
    * Macera modu bölüm ilerlemesini güncelle
    */
   async updateAdventureChapter(userId, newChapter) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { adventureChapter: true },
-    });
-
-    // Sadece yeni bölüm mevcut bölümden büyükse güncelle
-    if (!user || newChapter > user.adventureChapter) {
-      const updatedUser = await prisma.user.update({
-        where: { id: userId },
-        data: { adventureChapter: newChapter },
-        select: { id: true, adventureChapter: true },
-      });
-      return updatedUser;
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    
+    if (!userDoc.exists) {
+      throw new Error('Kullanıcı bulunamadı');
     }
-
-    return user;
+    
+    const userData = userDoc.data();
+    const currentChapter = userData.adventureChapter || 1;
+    
+    // Sadece yeni bölüm mevcut bölümden büyükse güncelle
+    if (newChapter > currentChapter) {
+      await userRef.update({ adventureChapter: newChapter });
+      return {
+        id: userDoc.id,
+        adventureChapter: newChapter,
+      };
+    }
+    
+    return {
+      id: userDoc.id,
+      adventureChapter: currentChapter,
+    };
   }
 
   /**
    * Kullanıcının macera modu ilerlemesini getir
    */
   async getAdventureProgress(userId) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, adventureChapter: true },
-    });
-    return user;
+    const user = await this.getUserById(userId);
+    
+    if (!user) {
+      return null;
+    }
+    
+    return {
+      id: user.id,
+      adventureChapter: user.adventureChapter || 1,
+    };
   }
 
   /**
    * Kullanıcı istatistiklerini getir
    */
   async getUserStats(userId) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        nickname: true,
-        avatar: true,
-        totalScore: true,
-        createdAt: true,
-        lastLogin: true,
-      },
-    });
-
+    const user = await this.getUserById(userId);
+    
     if (!user) {
       throw new Error('Kullanıcı bulunamadı');
     }
 
     // Toplam oyun sayısı (katıldığı oda sayısı)
-    const totalGames = await prisma.roomParticipant.count({
-      where: {
-        userId: userId,
-      },
-    });
+    const participantsSnapshot = await db.collection('room_participants')
+      .where('userId', '==', userId)
+      .get();
+    
+    const totalGames = participantsSnapshot.size;
 
-    // Kazanılan oyun sayısı (oda içinde en yüksek skora sahip olduğu oyunlar)
-    const rooms = await prisma.roomParticipant.findMany({
-      where: {
-        userId: userId,
-      },
-      include: {
-        room: {
-          include: {
-            participants: true,
-            gameSessions: true, // Soru sayısını hesaplamak için
-          },
-        },
-      },
-    });
-
+    // Katıldığı odaları getir
+    const roomIds = [...new Set(participantsSnapshot.docs.map(doc => doc.data().roomId))];
+    
     let wonGames = 0;
     let totalQuestions = 0;
     let totalCorrectAnswers = 0;
 
-    for (const participant of rooms) {
-      const roomParticipants = participant.room.participants;
-      const maxScore = Math.max(...roomParticipants.map(p => p.score));
-      const userScore = participant.score;
+    // Her oda için detaylı bilgi
+    for (const roomId of roomIds) {
+      const roomDoc = await db.collection('rooms').doc(roomId).get();
+      if (!roomDoc.exists) continue;
+      
+      const roomData = roomDoc.data();
+      
+      // Oda katılımcılarını getir
+      const roomParticipantsSnapshot = await db.collection('room_participants')
+        .where('roomId', '==', roomId)
+        .get();
+      
+      const participants = roomParticipantsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      
+      // Kullanıcının skorunu bul
+      const userParticipant = participants.find(p => p.userId === userId);
+      if (!userParticipant) continue;
+      
+      const userScore = userParticipant.score || 0;
+      const maxScore = Math.max(...participants.map(p => p.score || 0));
       
       // Oyun kazanma kontrolü
-      if (userScore === maxScore && roomParticipants.filter(p => p.score === maxScore).length === 1) {
+      if (userScore === maxScore && participants.filter(p => (p.score || 0) === maxScore).length === 1) {
         wonGames++;
       }
-
-      // Soru sayısı (her oyun 10 soru)
-      const questionCount = participant.room.gameSessions.length;
+      
+      // Soru sayısı (game sessions)
+      const gameSessionsSnapshot = await db.collection('game_sessions')
+        .where('roomId', '==', roomId)
+        .get();
+      
+      const questionCount = gameSessionsSnapshot.size;
       totalQuestions += questionCount;
-      // Doğru cevap sayısı = skor (her doğru cevap +1 puan)
       totalCorrectAnswers += userScore;
     }
 
@@ -217,43 +277,47 @@ class UserService {
       : 0;
 
     // Liderlik sırası (sadece kayıtlı kullanıcılar arasında)
-    const leaderboardPosition = user.isGuest 
-      ? null 
-      : await prisma.user.count({
-          where: {
-            isGuest: false,
-            totalScore: {
-              gt: user.totalScore,
-            },
-          },
-        }) + 1;
+    let leaderboardPosition = null;
+    if (!user.isGuest) {
+      const higherScoreUsers = await db.collection('users')
+        .where('isGuest', '==', false)
+        .where('totalScore', '>', user.totalScore || 0)
+        .get();
+      
+      leaderboardPosition = higherScoreUsers.size + 1;
+    }
 
     // Günlük performans (son 7 gün)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const sevenDaysAgo = admin.firestore.Timestamp.fromDate(
+      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    );
     
-    const recentRooms = await prisma.roomParticipant.findMany({
-      where: {
-        userId: userId,
-        room: {
-          createdAt: {
-            gte: sevenDaysAgo,
-          },
-        },
-      },
-      include: {
-        room: {
-          include: {
-            gameSessions: true,
-          },
-        },
-      },
-      orderBy: {
-        room: {
-          createdAt: 'asc',
-        },
-      },
-    });
+    const recentParticipantsSnapshot = await db.collection('room_participants')
+      .where('userId', '==', userId)
+      .get();
+    
+    const recentRooms = [];
+    for (const participantDoc of recentParticipantsSnapshot.docs) {
+      const participantData = participantDoc.data();
+      const roomDoc = await db.collection('rooms').doc(participantData.roomId).get();
+      
+      if (roomDoc.exists) {
+        const roomData = roomDoc.data();
+        const createdAt = roomData.createdAt;
+        
+        if (createdAt && createdAt.toMillis() >= sevenDaysAgo.toMillis()) {
+          const gameSessionsSnapshot = await db.collection('game_sessions')
+            .where('roomId', '==', participantData.roomId)
+            .get();
+          
+          recentRooms.push({
+            participant: { id: participantDoc.id, ...participantData },
+            room: { id: roomDoc.id, ...roomData, createdAt },
+            questionCount: gameSessionsSnapshot.size,
+          });
+        }
+      }
+    }
 
     // Günlük performans verileri
     const dailyPerformance = [];
@@ -266,8 +330,8 @@ class UserService {
       const nextDate = new Date(date);
       nextDate.setDate(nextDate.getDate() + 1);
 
-      const dayRooms = recentRooms.filter(p => {
-        const roomDate = new Date(p.room.createdAt);
+      const dayRooms = recentRooms.filter(r => {
+        const roomDate = r.room.createdAt.toDate();
         return roomDate >= date && roomDate < nextDate;
       });
 
@@ -275,11 +339,10 @@ class UserService {
       let dayCorrect = 0;
       let dayScore = 0;
 
-      dayRooms.forEach(participant => {
-        const questionCount = participant.room.gameSessions.length;
-        dayQuestions += questionCount;
-        dayCorrect += participant.score; // Skor = doğru cevap sayısı
-        dayScore += participant.score;
+      dayRooms.forEach(room => {
+        dayQuestions += room.questionCount;
+        dayCorrect += room.participant.score || 0;
+        dayScore += room.participant.score || 0;
       });
 
       dailyPerformance.push({
@@ -300,12 +363,16 @@ class UserService {
       : '0.0';
 
     return {
-      ...user,
+      id: user.id,
+      nickname: user.nickname,
+      avatar: user.avatar,
+      totalScore: user.totalScore || 0,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin,
       totalGames,
       wonGames,
       winRate: totalGames > 0 ? ((wonGames / totalGames) * 100).toFixed(1) : 0,
       leaderboardPosition,
-      // Performans verileri
       totalQuestions,
       totalCorrectAnswers,
       totalWrongAnswers,
@@ -314,7 +381,48 @@ class UserService {
       dailyImprovement,
     };
   }
+
+  /**
+   * Kullanıcının online durumunu güncelle
+   */
+  async setUserOnline(userId) {
+    try {
+      await db.collection('users').doc(userId).update({
+        isOnline: true,
+        lastSeen: admin.firestore.Timestamp.now(),
+      });
+    } catch (error) {
+      console.error('Online durumu güncellenirken hata:', error);
+    }
+  }
+
+  /**
+   * Kullanıcının offline durumunu güncelle
+   */
+  async setUserOffline(userId) {
+    try {
+      await db.collection('users').doc(userId).update({
+        isOnline: false,
+        lastSeen: admin.firestore.Timestamp.now(),
+        currentRoomId: null, // Odayı da temizle
+      });
+    } catch (error) {
+      console.error('Offline durumu güncellenirken hata:', error);
+    }
+  }
+
+  /**
+   * Kullanıcının aktif oyununu güncelle
+   */
+  async setUserCurrentRoom(userId, roomId) {
+    try {
+      await db.collection('users').doc(userId).update({
+        currentRoomId: roomId || null,
+      });
+    } catch (error) {
+      console.error('Aktif oyun güncellenirken hata:', error);
+    }
+  }
 }
 
 module.exports = new UserService();
-

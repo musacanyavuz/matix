@@ -20,6 +20,18 @@ router.post('/private', authenticateToken, roomController.createPrivateRoom.bind
 // Private room'a davet gönder (authentication gerektirir)
 router.post('/invite', authenticateToken, roomController.inviteToRoom.bind(roomController));
 
+// Arkadaşı oyuna davet et (authentication gerektirir)
+router.post('/invite-friend', authenticateToken, roomController.inviteFriendToRoom.bind(roomController));
+
+// Oda davetini kabul et (authentication gerektirir)
+router.post('/accept-invitation', authenticateToken, roomController.acceptRoomInvitation.bind(roomController));
+
+// Oda davetini reddet (authentication gerektirir)
+router.post('/reject-invitation', authenticateToken, roomController.rejectRoomInvitation.bind(roomController));
+
+// Bekleyen oda davetlerini getir (authentication gerektirir)
+router.get('/pending-invitations', authenticateToken, roomController.getPendingRoomInvitations.bind(roomController));
+
 // Odaya katıl
 router.post('/join', roomController.joinRoom.bind(roomController));
 

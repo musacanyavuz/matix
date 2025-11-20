@@ -13,17 +13,16 @@ class AuthController {
    */
   async register(req, res, next) {
     try {
-      const { email, password, nickname, avatar, ageGroup } = req.body;
+      const { password, nickname, avatar, ageGroup } = req.body;
 
-      if (!email || !password || !nickname) {
+      if (!password || !nickname) {
         return res.status(400).json({
           success: false,
-          message: 'Email, şifre ve takma ad gereklidir',
+          message: 'Şifre ve kullanıcı adı gereklidir',
         });
       }
 
       const result = await authService.register({
-        email,
         password,
         nickname,
         avatar,
@@ -49,16 +48,16 @@ class AuthController {
    */
   async login(req, res, next) {
     try {
-      const { email, password } = req.body;
+      const { username, password } = req.body;
 
-      if (!email || !password) {
+      if (!username || !password) {
         return res.status(400).json({
           success: false,
-          message: 'Email ve şifre gereklidir',
+          message: 'Kullanıcı adı ve şifre gereklidir',
         });
       }
 
-      const result = await authService.login({ email, password });
+      const result = await authService.login({ username, password });
 
       res.json({
         success: true,
@@ -107,7 +106,7 @@ class AuthController {
    */
   async convertGuest(req, res, next) {
     try {
-      const { guestUserId, email, password, nickname, avatar, ageGroup } = req.body;
+      const { guestUserId, password, nickname, avatar, ageGroup } = req.body;
 
       if (!guestUserId) {
         return res.status(400).json({
@@ -117,7 +116,6 @@ class AuthController {
       }
 
       const result = await authService.convertGuestToUser(guestUserId, {
-        email,
         password,
         nickname,
         avatar,
@@ -143,12 +141,12 @@ class AuthController {
    */
   async resetPassword(req, res, next) {
     try {
-      const { email, newPassword } = req.body;
+      const { username, newPassword } = req.body;
 
-      if (!email || !newPassword) {
+      if (!username || !newPassword) {
         return res.status(400).json({
           success: false,
-          message: 'Email ve yeni şifre gereklidir',
+          message: 'Kullanıcı adı ve yeni şifre gereklidir',
         });
       }
 
@@ -159,7 +157,7 @@ class AuthController {
         });
       }
 
-      const result = await authService.resetPassword(email, newPassword);
+      const result = await authService.resetPassword(username, newPassword);
 
       res.json({
         success: true,

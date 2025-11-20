@@ -41,7 +41,6 @@ export const ProfileScreen: React.FC = () => {
   const [loadingStats, setLoadingStats] = useState(false);
   const [isEditing, setIsEditing] = useState(!user); // Yeni kullanıcıysa düzenleme modu
   const [showGuestRegister, setShowGuestRegister] = useState(false); // Misafir kayıt formu
-  const [guestEmail, setGuestEmail] = useState('');
   const [guestPassword, setGuestPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -190,8 +189,25 @@ export const ProfileScreen: React.FC = () => {
   };
 
   const handleGuestRegister = async () => {
-    if (!guestEmail.trim()) {
-      Alert.alert('Hata', 'Lütfen email adresinizi girin.');
+    if (!nickname.trim()) {
+      Alert.alert('Hata', 'Lütfen bir kullanıcı adı girin.');
+      return;
+    }
+
+    if (nickname.length < 3) {
+      Alert.alert('Hata', 'Kullanıcı adı en az 3 karakter olmalıdır.');
+      return;
+    }
+
+    if (nickname.length > 20) {
+      Alert.alert('Hata', 'Kullanıcı adı en fazla 20 karakter olabilir.');
+      return;
+    }
+
+    // Kullanıcı adı format kontrolü
+    const nicknameRegex = /^[a-zA-Z0-9_ğüşıöçĞÜŞİÖÇ]+$/;
+    if (!nicknameRegex.test(nickname.trim())) {
+      Alert.alert('Hata', 'Kullanıcı adı sadece harf, rakam ve alt çizgi içerebilir.');
       return;
     }
 
@@ -205,11 +221,6 @@ export const ProfileScreen: React.FC = () => {
       return;
     }
 
-    if (!nickname.trim()) {
-      Alert.alert('Hata', 'Lütfen bir takma ad girin.');
-      return;
-    }
-
     if (!selectedAgeGroup) {
       Alert.alert('Hata', 'Lütfen bir yaş veya sınıf seçin.');
       return;
@@ -219,7 +230,6 @@ export const ProfileScreen: React.FC = () => {
 
     try {
       await convertGuestToUser(
-        guestEmail.trim(),
         guestPassword,
         nickname.trim(),
         selectedAvatar,
@@ -339,6 +349,12 @@ export const ProfileScreen: React.FC = () => {
             >
               <Text style={styles.leaderboardButtonText}>📊 {t('profile.performance')}</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.leaderboardButton, styles.friendsButton]}
+              onPress={() => (navigation as any).navigate('FriendList')}
+            >
+              <Text style={styles.leaderboardButtonText}>👥 Arkadaşlarım</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -419,35 +435,46 @@ export const ProfileScreen: React.FC = () => {
             </View>
           )}
 
-          {/* Misafir kullanıcılar için kayıt ol butonu */}
+          {/* Misafir kullanıcılar için kayıt ol ve giriş yap butonları */}
           {!isAuthenticated && user && (
             <View style={styles.guestSection}>
               <Text style={styles.guestSectionTitle}>
                 💡 Hesap oluşturarak skorlarınızı kaydedin!
               </Text>
               {!showGuestRegister ? (
-                <TouchableOpacity
-                  style={styles.guestRegisterButton}
-                  onPress={() => setShowGuestRegister(true)}
-                >
-                  <Text style={styles.guestRegisterButtonText}>
-                    Hesap Oluştur
-                  </Text>
-                </TouchableOpacity>
+                <>
+                  <TouchableOpacity
+                    style={styles.guestRegisterButton}
+                    onPress={() => setShowGuestRegister(true)}
+                  >
+                    <Text style={styles.guestRegisterButtonText}>
+                      Hesap Oluştur
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.guestLoginButton}
+                    onPress={() => (navigation as any).navigate('Login')}
+                  >
+                    <Text style={styles.guestLoginButtonText}>
+                      Giriş Yap
+                    </Text>
+                  </TouchableOpacity>
+                </>
               ) : (
                 <View style={styles.guestRegisterForm}>
                   <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Email</Text>
+                    <Text style={styles.label}>Kullanıcı Adı (Min. 3, Max. 20 karakter)</Text>
                     <TextInput
                       style={styles.input}
-                      value={guestEmail}
-                      onChangeText={setGuestEmail}
-                      placeholder="ornek@email.com"
+                      value={nickname}
+                      onChangeText={setNickname}
+                      placeholder="Örn: super_cocuk"
                       placeholderTextColor="#999"
-                      keyboardType="email-address"
+                      maxLength={20}
                       autoCapitalize="none"
                       autoCorrect={false}
                     />
+                    <Text style={styles.hintText}>Sadece harf, rakam ve alt çizgi kullanabilirsiniz</Text>
                   </View>
                   <View style={styles.inputContainer}>
                     <Text style={styles.label}>Şifre (Min. 6 karakter)</Text>
@@ -692,6 +719,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  guestLoginButton: {
+    backgroundColor: '#2196F3',
+    borderRadius: 12,
+    padding: 15,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  guestLoginButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   guestRegisterForm: {
     marginTop: 10,
   },
@@ -718,6 +757,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#2196F3',
     marginTop: 10,
   },
+  friendsButton: {
+    backgroundColor: '#FF9800',
+    marginTop: 10,
+  },
   settingsButton: {
     backgroundColor: '#9C27B0',
     marginTop: 10,
@@ -726,5 +769,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  hintText: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 5,
   },
 });

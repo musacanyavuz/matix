@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   Alert,
   Dimensions,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useGame } from '../contexts/GameContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -23,8 +23,15 @@ interface AdventureProgress {
   adventureChapter: number;
 }
 
+type AdventureMapRouteParams = {
+  AdventureMap: {
+    startChapter?: number;
+  };
+};
+
 export const AdventureMapScreen: React.FC = () => {
   const navigation = useNavigation();
+  const route = useRoute<RouteProp<AdventureMapRouteParams, 'AdventureMap'>>();
   const { user, userId, token, createRoom } = useGame();
   const { t } = useLanguage();
   const [currentChapter, setCurrentChapter] = useState(1);
@@ -34,6 +41,25 @@ export const AdventureMapScreen: React.FC = () => {
   useEffect(() => {
     loadAdventureProgress();
   }, []);
+
+  // Screen'e focus olduğunda ilerlemeyi yeniden yükle ve otomatik bölüm başlat
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', async () => {
+      await loadAdventureProgress();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  // Route params'ta startChapter varsa otomatik başlat
+  useEffect(() => {
+    const startChapter = (route.params as any)?.startChapter;
+    if (startChapter && !starting && !loading && currentChapter >= startChapter) {
+      console.log(`🚀 Otomatik bölüm başlatılıyor: ${startChapter}`);
+      setTimeout(() => {
+        handleChapterSelect(startChapter);
+      }, 500); // Kısa bir gecikme ile harita yüklendikten sonra başlat
+    }
+  }, [route.params, starting, loading, currentChapter, handleChapterSelect]);
 
   const loadAdventureProgress = async () => {
     if (!userId || !token) {
@@ -63,24 +89,27 @@ export const AdventureMapScreen: React.FC = () => {
     }
   };
 
-  const handleChapterSelect = async (chapter: number) => {
+  const handleChapterSelect = useCallback(async (chapter: number) => {
     // Sadece açık olan bölümler seçilebilir
     if (chapter > currentChapter) {
       Alert.alert('Kilitli Bölüm', `Bu bölümü açmak için önce ${currentChapter}. bölümü tamamlamalısınız!`);
       return;
     }
 
+    console.log(`🎮 Bölüm ${chapter} seçildi, oyun başlatılıyor...`);
     setStarting(true);
     try {
       // Macera modunda oda oluştur (chapter parametresi ile)
       await createRoom(0, true, chapter); // difficultyLevel: 0 (normal), adventureMode: true, chapter
+      console.log(`✅ Bölüm ${chapter} için oda oluşturuldu`);
       // createRoom başarılı olursa otomatik olarak oyun başlayacak
     } catch (error) {
+      console.error('❌ Oyun başlatma hatası:', error);
       Alert.alert('Hata', error instanceof Error ? error.message : 'Oyun başlatılamadı');
     } finally {
       setStarting(false);
     }
-  };
+  }, [currentChapter, createRoom]);
 
   const renderChapter = (chapter: number, index: number) => {
     const isLocked = chapter > currentChapter;

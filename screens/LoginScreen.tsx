@@ -17,14 +17,14 @@ import { useGame } from '../contexts/GameContext';
 export const LoginScreen: React.FC = () => {
   const navigation = useNavigation();
   const { login } = useGame();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     // Validasyon
-    if (!email.trim()) {
-      Alert.alert('Hata', 'Lütfen email adresinizi girin.');
+    if (!username.trim()) {
+      Alert.alert('Hata', 'Lütfen kullanıcı adınızı girin.');
       return;
     }
 
@@ -36,7 +36,7 @@ export const LoginScreen: React.FC = () => {
     setLoading(true);
 
     try {
-      await login(email.trim(), password);
+      await login(username.trim(), password);
 
       Alert.alert('Başarılı', 'Giriş yapıldı!', [
         {
@@ -71,14 +71,13 @@ export const LoginScreen: React.FC = () => {
 
         <View style={styles.form}>
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>Kullanıcı Adı</Text>
             <TextInput
               style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="ornek@email.com"
+              value={username}
+              onChangeText={setUsername}
+              placeholder="Kullanıcı adınızı girin"
               placeholderTextColor="#999"
-              keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
             />

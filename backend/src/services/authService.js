@@ -6,7 +6,9 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const userService = require('./userService');
-const prisma = require('../config/database');
+const db = require('../config/database');
+const { admin } = require('../config/firebase');
+const { v4: uuidv4 } = require('uuid');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'matix-secret-key-change-in-production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
@@ -14,58 +16,67 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 class AuthService {
   /**
    * Kullanıcı kaydı
-   * @param {Object} userData - { email, password, nickname, avatar, ageGroup }
+   * @param {Object} userData - { password, nickname, avatar, ageGroup }
    * @returns {Object} { user, token }
    */
-  async register(userData) {
-    const { email, password, nickname, avatar, ageGroup } = userData;
+  async register(userDataParam) {
+    const { password, nickname, avatar, ageGroup } = userDataParam;
 
     // Validasyon
-    if (!email || !password || !nickname) {
-      throw new Error('Email, şifre ve takma ad gereklidir');
+    if (!password || !nickname) {
+      throw new Error('Şifre ve kullanıcı adı gereklidir');
     }
 
     if (password.length < 6) {
       throw new Error('Şifre en az 6 karakter olmalıdır');
     }
 
-    // Email format kontrolü
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      throw new Error('Geçerli bir email adresi giriniz');
+    if (nickname.length < 3) {
+      throw new Error('Kullanıcı adı en az 3 karakter olmalıdır');
     }
 
-    // Email kontrolü
-    const existingUserByEmail = await userService.getUserByEmail(email);
-    if (existingUserByEmail) {
-      throw new Error('Bu email zaten kullanılıyor');
+    if (nickname.length > 20) {
+      throw new Error('Kullanıcı adı en fazla 20 karakter olabilir');
+    }
+
+    // Kullanıcı adı format kontrolü (sadece harf, rakam ve alt çizgi)
+    const nicknameRegex = /^[a-zA-Z0-9_ğüşıöçĞÜŞİÖÇ]+$/;
+    if (!nicknameRegex.test(nickname)) {
+      throw new Error('Kullanıcı adı sadece harf, rakam ve alt çizgi içerebilir');
     }
 
     // Nickname kontrolü
     const existingUserByNickname = await userService.getUserByNickname(nickname);
     if (existingUserByNickname) {
-      throw new Error('Bu takma ad zaten kullanılıyor');
+      throw new Error('Bu kullanıcı adı zaten kullanılıyor');
     }
 
     // Şifreyi hashle
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Kullanıcı oluştur
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        nickname,
-        avatar: avatar || '🐱',
-        isGuest: false,
-        lastLogin: new Date(),
-      },
-    });
+    // Kullanıcı oluştur (userService kullanarak)
+    const userId = uuidv4();
+    const now = admin.firestore.Timestamp.now();
+    
+    const userData = {
+      id: userId,
+      password: hashedPassword,
+      nickname,
+      avatar: avatar || '🐱',
+      isGuest: false,
+      totalScore: 0,
+      adventureChapter: 1,
+      lastLogin: now,
+      createdAt: now,
+    };
+
+    await db.collection('users').doc(userId).set(userData);
 
     // JWT token oluştur
-    const token = this.generateToken(user.id);
+    const token = this.generateToken(userId);
 
     // Şifreyi response'dan çıkar
+    const user = { ...userData };
     delete user.password;
 
     return { user, token };
@@ -73,20 +84,25 @@ class AuthService {
 
   /**
    * Kullanıcı girişi
-   * @param {Object} credentials - { email, password }
+   * @param {Object} credentials - { username (nickname), password }
    * @returns {Object} { user, token }
    */
   async login(credentials) {
-    const { email, password } = credentials;
+    const { username, password } = credentials;
 
-    if (!email || !password) {
-      throw new Error('Email ve şifre gereklidir');
+    if (!username || !password) {
+      throw new Error('Kullanıcı adı ve şifre gereklidir');
     }
 
-    // Kullanıcıyı bul
-    const user = await userService.getUserByEmail(email);
+    // Kullanıcıyı nickname ile bul
+    const user = await userService.getUserByNickname(username);
     if (!user) {
-      throw new Error('Email veya şifre hatalı');
+      throw new Error('Kullanıcı adı veya şifre hatalı');
+    }
+
+    // Misafir kullanıcı kontrolü
+    if (user.isGuest) {
+      throw new Error('Misafir kullanıcılar giriş yapamaz. Lütfen kayıt olun.');
     }
 
     // Şifre kontrolü
@@ -96,13 +112,12 @@ class AuthService {
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new Error('Email veya şifre hatalı');
+      throw new Error('Kullanıcı adı veya şifre hatalı');
     }
 
     // lastLogin güncelle
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLogin: new Date() },
+    await db.collection('users').doc(user.id).update({
+      lastLogin: admin.firestore.Timestamp.now(),
     });
 
     // JWT token oluştur
@@ -146,21 +161,29 @@ class AuthService {
    * @returns {Object} { user, token }
    */
   async convertGuestToUser(guestUserId, userData) {
-    const { email, password, nickname, avatar, ageGroup } = userData;
+    const { password, nickname, avatar, ageGroup } = userData;
 
     // Validasyon
-    if (!email || !password || !nickname) {
-      throw new Error('Email, şifre ve takma ad gereklidir');
+    if (!password || !nickname) {
+      throw new Error('Şifre ve kullanıcı adı gereklidir');
     }
 
     if (password.length < 6) {
       throw new Error('Şifre en az 6 karakter olmalıdır');
     }
 
-    // Email format kontrolü
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      throw new Error('Geçerli bir email adresi giriniz');
+    if (nickname.length < 3) {
+      throw new Error('Kullanıcı adı en az 3 karakter olmalıdır');
+    }
+
+    if (nickname.length > 20) {
+      throw new Error('Kullanıcı adı en fazla 20 karakter olabilir');
+    }
+
+    // Kullanıcı adı format kontrolü
+    const nicknameRegex = /^[a-zA-Z0-9_ğüşıöçĞÜŞİÖÇ]+$/;
+    if (!nicknameRegex.test(nickname)) {
+      throw new Error('Kullanıcı adı sadece harf, rakam ve alt çizgi içerebilir');
     }
 
     // Misafir kullanıcıyı bul
@@ -169,23 +192,16 @@ class AuthService {
       throw new Error('Misafir kullanıcı bulunamadı');
     }
 
-    // Eğer kullanıcı zaten kayıtlıysa (email varsa), direkt login yapmasını öner
-    if (!guestUser.isGuest || guestUser.email) {
-      // Kullanıcı zaten kayıtlı, email ile login yapabilir
+    // Eğer kullanıcı zaten kayıtlıysa, direkt login yapmasını öner
+    if (!guestUser.isGuest) {
       throw new Error('Bu kullanıcı zaten kayıtlı. Lütfen giriş yapın.');
-    }
-
-    // Email kontrolü
-    const existingUserByEmail = await userService.getUserByEmail(email);
-    if (existingUserByEmail) {
-      throw new Error('Bu email zaten kullanılıyor');
     }
 
     // Nickname kontrolü (eğer değiştiriliyorsa)
     if (nickname !== guestUser.nickname) {
       const existingUserByNickname = await userService.getUserByNickname(nickname);
       if (existingUserByNickname) {
-        throw new Error('Bu takma ad zaten kullanılıyor');
+        throw new Error('Bu kullanıcı adı zaten kullanılıyor');
       }
     }
 
@@ -193,18 +209,20 @@ class AuthService {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Misafir kullanıcıyı kayıtlı kullanıcıya dönüştür
-    // Skorları koru, sadece email ve password ekle
-    const user = await prisma.user.update({
-      where: { id: guestUserId },
-      data: {
-        email,
-        password: hashedPassword,
-        nickname: nickname || guestUser.nickname,
-        avatar: avatar || guestUser.avatar,
-        isGuest: false,
-        lastLogin: new Date(),
-      },
-    });
+    // Skorları koru, sadece password ekle
+    const updateData = {
+      password: hashedPassword,
+      nickname: nickname || guestUser.nickname,
+      avatar: avatar || guestUser.avatar,
+      isGuest: false,
+      lastLogin: admin.firestore.Timestamp.now(),
+    };
+
+    await db.collection('users').doc(guestUserId).update(updateData);
+
+    // Güncellenmiş kullanıcıyı getir
+    const updatedDoc = await db.collection('users').doc(guestUserId).get();
+    const user = { id: updatedDoc.id, ...updatedDoc.data() };
 
     // JWT token oluştur
     const token = this.generateToken(user.id);
@@ -217,27 +235,28 @@ class AuthService {
 
   /**
    * Şifre sıfırlama (geliştirme için)
-   * @param {String} email
+   * @param {String} username
    * @param {String} newPassword
    * @returns {Object} { user }
    */
-  async resetPassword(email, newPassword) {
+  async resetPassword(username, newPassword) {
     // Kullanıcıyı bul
-    const user = await userService.getUserByEmail(email);
+    const user = await userService.getUserByNickname(username);
     if (!user) {
-      throw new Error('Bu email ile kayıtlı kullanıcı bulunamadı');
+      throw new Error('Bu kullanıcı adı ile kayıtlı kullanıcı bulunamadı');
     }
 
     // Şifreyi hashle
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Şifreyi güncelle
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        password: hashedPassword,
-      },
+    await db.collection('users').doc(user.id).update({
+      password: hashedPassword,
     });
+
+    // Güncellenmiş kullanıcıyı getir
+    const updatedDoc = await db.collection('users').doc(user.id).get();
+    const updatedUser = { id: updatedDoc.id, ...updatedDoc.data() };
 
     // Şifreyi response'dan çıkar
     delete updatedUser.password;
