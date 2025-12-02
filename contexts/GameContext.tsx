@@ -18,6 +18,11 @@ import {
 } from 'firebase/firestore';
 import { db } from '../utils/firebaseConfig';
 import { AgeGroup } from '../constants/ageGroups';
+import {
+  GoogleSignin,
+  statusCodes,
+  User as GoogleUser,
+} from '@react-native-google-signin/google-signin';
 
 // Tip tanımlamaları
 export interface User {
@@ -26,6 +31,8 @@ export interface User {
   avatar: string;
   ageGroup: AgeGroup;
   password?: string; // Basitlik için client-side auth
+  googleId?: string;
+  email?: string;
 }
 
 export interface Player {
@@ -67,6 +74,8 @@ interface GameContextType extends GameState {
   setUser: (user: User) => Promise<void>;
   login: (nickname: string, password: string) => Promise<void>;
   register: (password: string, nickname: string, avatar: string, ageGroup: AgeGroup) => Promise<void>;
+  registerWithGoogle: (nickname: string, avatar: string, ageGroup: AgeGroup, googleUser: GoogleUser) => Promise<void>;
+  loginWithGoogle: () => Promise<GoogleUser | void>;
   logout: () => Promise<void>;
   createRoom: (difficultyLevel?: number) => Promise<void>;
   joinRoom: (roomCode: string) => Promise<void>;
@@ -100,6 +109,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Kullanıcıyı yükle
   useEffect(() => {
     loadUser();
+
+    // Google Signin konfigürasyonu
+    GoogleSignin.configure({
+      // webClientId: 'YOUR_WEB_CLIENT_ID', // Firebase Console'dan alınmalı
+      offlineAccess: true,
+    });
   }, []);
 
   // Oda dinleyicisi
@@ -237,7 +252,85 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const loginWithGoogle = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+
+      // Kullanıcı veritabanında var mı kontrol et
+      const q = query(collection(db, 'users'), where('googleId', '==', userInfo.user.id));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        // Kullanıcı var, giriş yap
+        const userDoc = querySnapshot.docs[0];
+        const userData = userDoc.data() as User;
+        const fullUser = { ...userData, id: userDoc.id };
+
+        await AsyncStorage.setItem('user', JSON.stringify(fullUser));
+        setUserState(fullUser);
+        setUserId(userDoc.id);
+        setAgeGroup(userData.ageGroup);
+        setIsAuthenticated(true);
+      } else {
+        // Kullanıcı yok, kayıt ekranına yönlendirmek için userInfo döndür
+        return userInfo;
+      }
+    } catch (error: any) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // Kullanıcı iptal etti
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        // İşlem devam ediyor
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert('Hata', 'Google Play Hizmetleri kullanılamıyor.');
+      } else {
+        console.error('Google Login hatası:', error);
+        Alert.alert('Hata', 'Google ile giriş yapılırken bir sorun oluştu.');
+      }
+    }
+  };
+
+  const registerWithGoogle = async (nickname: string, avatar: string, ageGroupData: AgeGroup, googleUser: GoogleUser) => {
+    try {
+      // Nickname kontrolü
+      const q = query(collection(db, 'users'), where('nickname', '==', nickname));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        throw new Error('Bu kullanıcı adı zaten alınmış');
+      }
+
+      const newUser: User = {
+        nickname,
+        avatar,
+        ageGroup: ageGroupData,
+        googleId: googleUser.user.id,
+        email: googleUser.user.email,
+      };
+
+      const docRef = await addDoc(collection(db, 'users'), newUser);
+      const fullUser = { ...newUser, id: docRef.id };
+
+      await AsyncStorage.setItem('user', JSON.stringify(fullUser));
+      setUserState(fullUser);
+      setUserId(docRef.id);
+      setAgeGroup(ageGroupData);
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error('Google Register hatası:', error);
+      throw error;
+    }
+  };
+
   const logout = async () => {
+    try {
+      if (await GoogleSignin.isSignedIn()) {
+        await GoogleSignin.signOut();
+      }
+    } catch (error) {
+      console.error('Google logout error:', error);
+    }
+
     await AsyncStorage.removeItem('user');
     setUserState(null);
     setUserId(null);
@@ -483,7 +576,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isHost,
         setUser,
         login,
+        loginWithGoogle,
         register,
+        registerWithGoogle,
         logout,
         createRoom,
         joinRoom,

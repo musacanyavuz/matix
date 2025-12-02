@@ -10,19 +10,24 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { AvatarSelector } from '../components/AvatarSelector';
 import { AgeGroupSelector } from '../components/AgeGroupSelector';
 import { AgeGroup } from '../constants/ageGroups';
 import { Button } from '../components/Button';
 import { useGame } from '../contexts/GameContext';
 
+type RegisterScreenRouteProp = RouteProp<{ Register: { googleUser?: any } }, 'Register'>;
+
 export const RegisterScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { register } = useGame();
+  const route = useRoute<RegisterScreenRouteProp>();
+  const googleUser = route.params?.googleUser;
+
+  const { register, registerWithGoogle } = useGame();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [nickname, setNickname] = useState('');
+  const [nickname, setNickname] = useState(googleUser?.user?.name?.replace(/\s+/g, '_').toLowerCase() || '');
   const [selectedAvatar, setSelectedAvatar] = useState('🐱');
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<AgeGroup | null>(null);
   const [loading, setLoading] = useState(false);
@@ -51,14 +56,16 @@ export const RegisterScreen: React.FC = () => {
       return;
     }
 
-    if (!password || password.length < 6) {
-      Alert.alert('Hata', 'Şifre en az 6 karakter olmalıdır.');
-      return;
-    }
+    if (!googleUser) {
+      if (!password || password.length < 6) {
+        Alert.alert('Hata', 'Şifre en az 6 karakter olmalıdır.');
+        return;
+      }
 
-    if (password !== confirmPassword) {
-      Alert.alert('Hata', 'Şifreler eşleşmiyor.');
-      return;
+      if (password !== confirmPassword) {
+        Alert.alert('Hata', 'Şifreler eşleşmiyor.');
+        return;
+      }
     }
 
     if (!selectedAgeGroup) {
@@ -69,12 +76,21 @@ export const RegisterScreen: React.FC = () => {
     setLoading(true);
 
     try {
-      await register(
-        password,
-        nickname.trim(),
-        selectedAvatar,
-        selectedAgeGroup
-      );
+      if (googleUser) {
+        await registerWithGoogle(
+          nickname.trim(),
+          selectedAvatar,
+          selectedAgeGroup,
+          googleUser
+        );
+      } else {
+        await register(
+          password,
+          nickname.trim(),
+          selectedAvatar,
+          selectedAgeGroup
+        );
+      }
 
       Alert.alert('Başarılı', 'Kayıt işlemi tamamlandı!', [
         {
@@ -98,7 +114,7 @@ export const RegisterScreen: React.FC = () => {
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Kayıt Ol</Text>
+          <Text style={styles.title}>{googleUser ? 'Profili Tamamla' : 'Kayıt Ol'}</Text>
           <TouchableOpacity
             onPress={() => (navigation as any).goBack()}
             style={styles.backButton}
@@ -123,29 +139,33 @@ export const RegisterScreen: React.FC = () => {
             <Text style={styles.hintText}>Sadece harf, rakam ve alt çizgi kullanabilirsiniz</Text>
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Şifre (Min. 6 karakter)</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="••••••"
-              placeholderTextColor="#999"
-              secureTextEntry
-            />
-          </View>
+          {!googleUser && (
+            <>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Şifre (Min. 6 karakter)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="••••••"
+                  placeholderTextColor="#999"
+                  secureTextEntry
+                />
+              </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Şifre Tekrar</Text>
-            <TextInput
-              style={styles.input}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              placeholder="••••••"
-              placeholderTextColor="#999"
-              secureTextEntry
-            />
-          </View>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Şifre Tekrar</Text>
+                <TextInput
+                  style={styles.input}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="••••••"
+                  placeholderTextColor="#999"
+                  secureTextEntry
+                />
+              </View>
+            </>
+          )}
 
           <AvatarSelector
             selectedAvatar={selectedAvatar}
@@ -158,7 +178,7 @@ export const RegisterScreen: React.FC = () => {
           />
 
           <Button
-            title={loading ? 'Kaydediliyor...' : 'Kayıt Ol'}
+            title={loading ? 'Kaydediliyor...' : (googleUser ? 'Tamamla' : 'Kayıt Ol')}
             onPress={handleRegister}
             variant="primary"
             disabled={loading}

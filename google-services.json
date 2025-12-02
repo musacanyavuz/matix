@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "979802238732",
+    "project_id": "matix-573eb",
+    "storage_bucket": "matix-573eb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:979802238732:android:be13aada6cfda35d47a329",
+        "android_client_info": {
+          "package_name": "com.matix.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "979802238732-fceic7veea02q0et2p2ee5v11af3bisg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-tzvZv_sjc0Zq-LcmOkjjzgOEJFCQ4ck"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "979802238732-fceic7veea02q0et2p2ee5v11af3bisg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

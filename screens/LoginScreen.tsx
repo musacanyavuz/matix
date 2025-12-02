@@ -13,10 +13,11 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Button } from '../components/Button';
 import { useGame } from '../contexts/GameContext';
+import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
 
 export const LoginScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { login } = useGame();
+  const { login, loginWithGoogle } = useGame();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -50,6 +51,22 @@ export const LoginScreen: React.FC = () => {
       Alert.alert('Hata', error instanceof Error ? error.message : 'Giriş başarısız');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await loginWithGoogle();
+      if (result) {
+        // Yeni kullanıcı, kayıt ekranına git
+        (navigation as any).navigate('Register', { googleUser: result });
+      } else {
+        // Başarılı giriş (Context içinde state güncellendi)
+        if (result !== undefined) return; // Hata durumunda undefined dönmeyebilir, emin olmak için
+        (navigation as any).navigate('Room');
+      }
+    } catch (error) {
+      console.error('Google login error in screen:', error);
     }
   };
 
@@ -100,6 +117,20 @@ export const LoginScreen: React.FC = () => {
             onPress={handleLogin}
             variant="primary"
             disabled={loading}
+          />
+
+          <View style={styles.dividerContainer}>
+            <View style={styles.divider} />
+            <Text style={styles.dividerText}>VEYA</Text>
+            <View style={styles.divider} />
+          </View>
+
+          <GoogleSigninButton
+            size={GoogleSigninButton.Size.Wide}
+            color={GoogleSigninButton.Color.Dark}
+            onPress={handleGoogleLogin}
+            disabled={loading}
+            style={styles.googleButton}
           />
 
           <TouchableOpacity
@@ -187,6 +218,25 @@ const styles = StyleSheet.create({
   registerLinkBold: {
     fontWeight: 'bold',
     color: '#4CAF50',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e0e0e0',
+  },
+  dividerText: {
+    marginHorizontal: 10,
+    color: '#999',
+    fontSize: 14,
+  },
+  googleButton: {
+    width: '100%',
+    height: 48,
   },
 });
 

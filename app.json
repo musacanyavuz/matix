@@ -16,14 +16,16 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.matix.app",
-      "deploymentTarget": "15.1"
+      "deploymentTarget": "15.1",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#4CAF50"
       },
       "package": "com.matix.app",
-      "minSdkVersion": 26
+      "minSdkVersion": 26,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {},
     "plugins": [
@@ -37,7 +39,8 @@
             "deploymentTarget": "15.1"
           }
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ]
   }
 }
