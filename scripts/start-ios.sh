@@ -3,6 +3,9 @@
 # iOS Expo Dev Server Başlatıcı (Port 8081)
 # Kullanım: ./scripts/start-ios.sh
 
+# Add common paths for Node.js
+export PATH=$PATH:/usr/local/bin:/opt/homebrew/bin
+
 echo "🍎 iOS Expo Dev Server Başlatılıyor (Port 8081)..."
 
 # Proje kök dizinine git
@@ -37,6 +40,7 @@ echo "   2. QR kodu tarayın veya terminalden 'i' tuşuna basın"
 echo ""
 
 # Expo'yu iOS portunda başlat
-npx expo start --port 8081
+# Native modüller (Google Auth, AdMob) için development build başlat
+npx expo run:ios
 
 

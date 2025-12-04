@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useGame } from '../contexts/GameContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from '../components/Button';
+import { AdBanner } from '../components/AdBanner';
 
 const SOCKET_URL = 'http://192.168.1.107:3001';
 
@@ -49,7 +50,7 @@ export const HomeScreen: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    
+
     // Screen'e focus olduğunda verileri yenile
     const unsubscribe = navigation.addListener('focus', () => {
       loadData();
@@ -159,11 +160,11 @@ export const HomeScreen: React.FC = () => {
     try {
       // Önce oda oluştur
       await createRoom(0, false);
-      
+
       // Oda oluşturulduktan sonra roomId'yi almak için kısa bir bekleme
       // roomId socket event'inden gelecek
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       // roomId context'ten al (roomCode olarak geliyor)
       if (roomId) {
         // Backend'de roomCode'dan roomId'yi almak için API çağrısı yap
@@ -174,7 +175,7 @@ export const HomeScreen: React.FC = () => {
             'Authorization': `Bearer ${token}`,
           },
         });
-        
+
         if (response.ok) {
           const roomData = await response.json();
           if (roomData.success && roomData.data && roomData.data.id) {
@@ -215,195 +216,199 @@ export const HomeScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }
-    >
-      <View style={styles.content}>
-        {/* Hoş Geldin Mesajı */}
-        <View style={styles.welcomeSection}>
-          <Text style={styles.welcomeText}>
-            {isAuthenticated ? `Hoş geldin, ${user?.nickname}! 👋` : 'Hoş geldin! 👋'}
-          </Text>
-          <Text style={styles.welcomeSubtext}>
-            {isAuthenticated ? 'Oyun istatistiklerin ve arkadaşların burada' : 'Oyun oynamaya başlamak için giriş yap'}
-          </Text>
-        </View>
-
-        {/* Oyna Butonu */}
-        <View style={styles.playSection}>
-          <Button
-            title="🎮 Oyna"
-            onPress={handlePlay}
-            variant="primary"
-          />
-        </View>
-
-        {/* Kullanıcı İstatistikleri */}
-        {isAuthenticated && stats && (
-          <View style={styles.statsSection}>
-            <Text style={styles.sectionTitle}>📊 İstatistiklerim</Text>
-            <View style={styles.statsGrid}>
-              <View style={styles.statCard}>
-                <Text style={styles.statIcon}>🏆</Text>
-                <Text style={styles.statValue}>{stats.totalScore || 0}</Text>
-                <Text style={styles.statLabel}>Toplam Skor</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statIcon}>🎮</Text>
-                <Text style={styles.statValue}>{stats.totalGames || 0}</Text>
-                <Text style={styles.statLabel}>Toplam Oyun</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statIcon}>✅</Text>
-                <Text style={styles.statValue}>{stats.wonGames || 0}</Text>
-                <Text style={styles.statLabel}>Kazanma</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statIcon}>📈</Text>
-                <Text style={styles.statValue}>%{stats.winRate || '0'}</Text>
-                <Text style={styles.statLabel}>Kazanma Oranı</Text>
-              </View>
-            </View>
-            {stats.leaderboardPosition && (
-              <View style={styles.leaderboardBadge}>
-                <Text style={styles.leaderboardText}>
-                  🥇 Liderlik Sırası: {stats.leaderboardPosition}
-                </Text>
-              </View>
-            )}
-            {stats.adventureChapter && (
-              <View style={styles.adventureBadge}>
-                <Text style={styles.adventureText}>
-                  ⚔️ Macera Bölümü: {stats.adventureChapter}
-                </Text>
-                <TouchableOpacity
-                  style={styles.adventureButton}
-                  onPress={handleViewAdventure}
-                >
-                  <Text style={styles.adventureButtonText}>Macera Parkuruna Git →</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+    <>
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
+        <View style={styles.content}>
+          {/* Hoş Geldin Mesajı */}
+          <View style={styles.welcomeSection}>
+            <Text style={styles.welcomeText}>
+              {isAuthenticated ? `Hoş geldin, ${user?.nickname}! 👋` : 'Hoş geldin! 👋'}
+            </Text>
+            <Text style={styles.welcomeSubtext}>
+              {isAuthenticated ? 'Oyun istatistiklerin ve arkadaşların burada' : 'Oyun oynamaya başlamak için giriş yap'}
+            </Text>
           </View>
-        )}
 
-        {/* Arkadaşlar Bölümü */}
-        {isAuthenticated && (
-          <View style={styles.friendsSection}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>👥 Arkadaşlarım</Text>
-              <TouchableOpacity onPress={handleViewFriends}>
-                <Text style={styles.viewAllText}>Tümünü Gör →</Text>
-              </TouchableOpacity>
-            </View>
+          {/* Oyna Butonu */}
+          <View style={styles.playSection}>
+            <Button
+              title="🎮 Oyna"
+              onPress={handlePlay}
+              variant="primary"
+            />
+          </View>
 
-            {friends.length === 0 ? (
-              <View style={styles.emptyFriendsContainer}>
-                <Text style={styles.emptyFriendsIcon}>👥</Text>
-                <Text style={styles.emptyFriendsText}>Henüz arkadaşınız yok</Text>
-                <Button
-                  title="➕ Arkadaş Ekle"
-                  onPress={() => navigation.navigate('AddFriend' as never)}
-                  variant="secondary"
-                />
+          {/* Kullanıcı İstatistikleri */}
+          {isAuthenticated && stats && (
+            <View style={styles.statsSection}>
+              <Text style={styles.sectionTitle}>📊 İstatistiklerim</Text>
+              <View style={styles.statsGrid}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statIcon}>🏆</Text>
+                  <Text style={styles.statValue}>{stats.totalScore || 0}</Text>
+                  <Text style={styles.statLabel}>Toplam Skor</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statIcon}>🎮</Text>
+                  <Text style={styles.statValue}>{stats.totalGames || 0}</Text>
+                  <Text style={styles.statLabel}>Toplam Oyun</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statIcon}>✅</Text>
+                  <Text style={styles.statValue}>{stats.wonGames || 0}</Text>
+                  <Text style={styles.statLabel}>Kazanma</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statIcon}>📈</Text>
+                  <Text style={styles.statValue}>%{stats.winRate || '0'}</Text>
+                  <Text style={styles.statLabel}>Kazanma Oranı</Text>
+                </View>
               </View>
-            ) : (
-              <View style={styles.friendsList}>
-                {friends.slice(0, 5).map((friend) => (
-                  <View key={friend.id} style={styles.friendCard}>
-                    <View style={styles.friendInfo}>
-                      <View style={styles.friendAvatarContainer}>
-                        <Text style={styles.friendAvatar}>{friend.avatar}</Text>
-                        {friend.isOnline && (
-                          <View style={styles.onlineIndicator} />
-                        )}
-                      </View>
-                      <View style={styles.friendDetails}>
-                        <Text style={styles.friendNickname}>{friend.nickname}</Text>
-                        <Text style={styles.friendScore}>🏆 {friend.totalScore || 0} skor</Text>
-                        {friend.currentGame ? (
-                          <Text style={styles.friendGameStatus}>🎮 Oyun oynuyor ({friend.currentGame.roomCode})</Text>
-                        ) : friend.isOnline ? (
-                          <Text style={styles.friendOnlineStatus}>🟢 Çevrimiçi</Text>
-                        ) : (
-                          <Text style={styles.friendOfflineStatus}>⚫ Çevrimdışı</Text>
-                        )}
-                      </View>
-                    </View>
-                    <TouchableOpacity
-                      style={[
-                        styles.inviteButton,
-                        invitingFriendId === friend.id && styles.inviteButtonDisabled,
-                      ]}
-                      onPress={() => handleInviteFriend(friend)}
-                      disabled={invitingFriendId === friend.id || !friend.isOnline || !!friend.currentGame}
-                    >
-                      {invitingFriendId === friend.id ? (
-                        <ActivityIndicator size="small" color="#fff" />
-                      ) : (
-                        <Text style={styles.inviteButtonText}>🎮 Davet Et</Text>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                ))}
-                {friends.length > 5 && (
+              {stats.leaderboardPosition && (
+                <View style={styles.leaderboardBadge}>
+                  <Text style={styles.leaderboardText}>
+                    🥇 Liderlik Sırası: {stats.leaderboardPosition}
+                  </Text>
+                </View>
+              )}
+              {stats.adventureChapter && (
+                <View style={styles.adventureBadge}>
+                  <Text style={styles.adventureText}>
+                    ⚔️ Macera Bölümü: {stats.adventureChapter}
+                  </Text>
                   <TouchableOpacity
-                    style={styles.viewMoreButton}
-                    onPress={handleViewFriends}
+                    style={styles.adventureButton}
+                    onPress={handleViewAdventure}
                   >
-                    <Text style={styles.viewMoreText}>
-                      +{friends.length - 5} arkadaş daha görüntüle
-                    </Text>
+                    <Text style={styles.adventureButtonText}>Macera Parkuruna Git →</Text>
                   </TouchableOpacity>
-                )}
-              </View>
-            )}
-          </View>
-        )}
+                </View>
+              )}
+            </View>
+          )}
 
-        {/* Hızlı Erişim Butonları */}
-        <View style={styles.quickActionsSection}>
-          <Text style={styles.sectionTitle}>⚡ Hızlı Erişim</Text>
-          <View style={styles.quickActionsGrid}>
-            <TouchableOpacity
-              style={styles.quickActionCard}
-              onPress={() => navigation.navigate('Leaderboard' as never)}
-            >
-              <Text style={styles.quickActionIcon}>🏆</Text>
-              <Text style={styles.quickActionText}>Liderlik</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.quickActionCard}
-              onPress={() => navigation.navigate('Profile' as never)}
-            >
-              <Text style={styles.quickActionIcon}>👤</Text>
-              <Text style={styles.quickActionText}>Profil</Text>
-            </TouchableOpacity>
-            {isAuthenticated && (
-              <>
-                <TouchableOpacity
-                  style={styles.quickActionCard}
-                  onPress={() => navigation.navigate('FriendList' as never)}
-                >
-                  <Text style={styles.quickActionIcon}>👥</Text>
-                  <Text style={styles.quickActionText}>Arkadaşlar</Text>
+          {/* Arkadaşlar Bölümü */}
+          {isAuthenticated && (
+            <View style={styles.friendsSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>👥 Arkadaşlarım</Text>
+                <TouchableOpacity onPress={handleViewFriends}>
+                  <Text style={styles.viewAllText}>Tümünü Gör →</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.quickActionCard}
-                  onPress={handleViewAdventure}
-                >
-                  <Text style={styles.quickActionIcon}>⚔️</Text>
-                  <Text style={styles.quickActionText}>Macera</Text>
-                </TouchableOpacity>
-              </>
-            )}
+              </View>
+
+              {friends.length === 0 ? (
+                <View style={styles.emptyFriendsContainer}>
+                  <Text style={styles.emptyFriendsIcon}>👥</Text>
+                  <Text style={styles.emptyFriendsText}>Henüz arkadaşınız yok</Text>
+                  <Button
+                    title="➕ Arkadaş Ekle"
+                    onPress={() => navigation.navigate('AddFriend' as never)}
+                    variant="secondary"
+                  />
+                </View>
+              ) : (
+                <View style={styles.friendsList}>
+                  {friends.slice(0, 5).map((friend) => (
+                    <View key={friend.id} style={styles.friendCard}>
+                      <View style={styles.friendInfo}>
+                        <View style={styles.friendAvatarContainer}>
+                          <Text style={styles.friendAvatar}>{friend.avatar}</Text>
+                          {friend.isOnline && (
+                            <View style={styles.onlineIndicator} />
+                          )}
+                        </View>
+                        <View style={styles.friendDetails}>
+                          <Text style={styles.friendNickname}>{friend.nickname}</Text>
+                          <Text style={styles.friendScore}>🏆 {friend.totalScore || 0} skor</Text>
+                          {friend.currentGame ? (
+                            <Text style={styles.friendGameStatus}>🎮 Oyun oynuyor ({friend.currentGame.roomCode})</Text>
+                          ) : friend.isOnline ? (
+                            <Text style={styles.friendOnlineStatus}>🟢 Çevrimiçi</Text>
+                          ) : (
+                            <Text style={styles.friendOfflineStatus}>⚫ Çevrimdışı</Text>
+                          )}
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.inviteButton,
+                          invitingFriendId === friend.id && styles.inviteButtonDisabled,
+                        ]}
+                        onPress={() => handleInviteFriend(friend)}
+                        disabled={invitingFriendId === friend.id || !friend.isOnline || !!friend.currentGame}
+                      >
+                        {invitingFriendId === friend.id ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Text style={styles.inviteButtonText}>🎮 Davet Et</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  {friends.length > 5 && (
+                    <TouchableOpacity
+                      style={styles.viewMoreButton}
+                      onPress={handleViewFriends}
+                    >
+                      <Text style={styles.viewMoreText}>
+                        +{friends.length - 5} arkadaş daha görüntüle
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Hızlı Erişim Butonları */}
+          <View style={styles.quickActionsSection}>
+            <Text style={styles.sectionTitle}>⚡ Hızlı Erişim</Text>
+            <View style={styles.quickActionsGrid}>
+              <TouchableOpacity
+                style={styles.quickActionCard}
+                onPress={() => navigation.navigate('Leaderboard' as never)}
+              >
+                <Text style={styles.quickActionIcon}>🏆</Text>
+                <Text style={styles.quickActionText}>Liderlik</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quickActionCard}
+                onPress={() => navigation.navigate('Profile' as never)}
+              >
+                <Text style={styles.quickActionIcon}>👤</Text>
+                <Text style={styles.quickActionText}>Profil</Text>
+              </TouchableOpacity>
+              {isAuthenticated && (
+                <>
+                  <TouchableOpacity
+                    style={styles.quickActionCard}
+                    onPress={() => navigation.navigate('FriendList' as never)}
+                  >
+                    <Text style={styles.quickActionIcon}>👥</Text>
+                    <Text style={styles.quickActionText}>Arkadaşlar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.quickActionCard}
+                    onPress={handleViewAdventure}
+                  >
+                    <Text style={styles.quickActionIcon}>⚔️</Text>
+                    <Text style={styles.quickActionText}>Macera</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
           </View>
         </View>
       </View>
-    </ScrollView>
+    </ScrollView >
+      <AdBanner />
+    </>
   );
 };
 

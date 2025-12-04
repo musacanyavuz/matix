@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useGame } from '../contexts/GameContext';
 import { Button } from '../components/Button';
 import { PlayerCard } from '../components/PlayerCard';
+import { AdBanner } from '../components/AdBanner';
 
 export const ResultScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -42,94 +43,97 @@ export const ResultScreen: React.FC = () => {
 
   const handleNextChapter = async () => {
     if (!nextChapter) return;
-    
+
     resetGame();
     disconnect();
-    
+
     // AdventureMapScreen'e yönlendir ve sonraki bölümü başlat
-    (navigation as any).navigate('AdventureMap', { 
-      startChapter: nextChapter 
+    (navigation as any).navigate('AdventureMap', {
+      startChapter: nextChapter
     });
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          {isWinner ? (
-            <>
-              <Text style={styles.trophy}>🏆</Text>
-              <Text style={styles.winnerText}>Tebrikler!</Text>
-              <Text style={styles.winnerSubtext}>Kazandınız! 🎉</Text>
-            </>
-          ) : (
-            <>
-              <Text style={styles.trophy}>😊</Text>
-              <Text style={styles.loserText}>Güzel Oyun!</Text>
-              <Text style={styles.loserSubtext}>
-                {winner?.nickname} kazandı! 🎉
-              </Text>
-            </>
-          )}
-        </View>
+    <>
+      <ScrollView style={styles.container}>
+        <View style={styles.content}>
+          <View style={styles.header}>
+            {isWinner ? (
+              <>
+                <Text style={styles.trophy}>🏆</Text>
+                <Text style={styles.winnerText}>Tebrikler!</Text>
+                <Text style={styles.winnerSubtext}>Kazandınız! 🎉</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.trophy}>😊</Text>
+                <Text style={styles.loserText}>Güzel Oyun!</Text>
+                <Text style={styles.loserSubtext}>
+                  {winner?.nickname} kazandı! 🎉
+                </Text>
+              </>
+            )}
+          </View>
 
-        <View style={styles.scoresContainer}>
-          <Text style={styles.scoresTitle}>🏆 Final Skorları</Text>
-          <View style={styles.playersList}>
-            {sortedPlayers.map((player, index) => {
-              const isCurrentUser = player.nickname === user?.nickname;
-              const isTopPlayer = index === 0;
-              
-              return (
-                <View 
-                  key={player.id} 
-                  style={[
-                    styles.playerWrapper,
-                    isTopPlayer && styles.topPlayerWrapper
-                  ]}
-                >
-                  <View style={styles.rankBadge}>
-                    <Text style={styles.rankText}>
-                      {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
-                    </Text>
+          <View style={styles.scoresContainer}>
+            <Text style={styles.scoresTitle}>🏆 Final Skorları</Text>
+            <View style={styles.playersList}>
+              {sortedPlayers.map((player, index) => {
+                const isCurrentUser = player.nickname === user?.nickname;
+                const isTopPlayer = index === 0;
+
+                return (
+                  <View
+                    key={player.id}
+                    style={[
+                      styles.playerWrapper,
+                      isTopPlayer && styles.topPlayerWrapper
+                    ]}
+                  >
+                    <View style={styles.rankBadge}>
+                      <Text style={styles.rankText}>
+                        {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                      </Text>
+                    </View>
+                    <PlayerCard player={player} isCurrentUser={isCurrentUser} />
+                    {isTopPlayer && (
+                      <Text style={styles.winnerBadge}>🏆 Kazanan</Text>
+                    )}
                   </View>
-                  <PlayerCard player={player} isCurrentUser={isCurrentUser} />
-                  {isTopPlayer && (
-                    <Text style={styles.winnerBadge}>🏆 Kazanan</Text>
-                  )}
-                </View>
-              );
-            })}
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={styles.actions}>
+            {/* Macera modunda ve bölüm ilerlediyse "Sonraki Bölüme Geç" butonu */}
+            {adventureMode && chapterProgressed && nextChapter && (
+              <>
+                <Button
+                  title={`➡️ Sonraki Bölüme Geç (Bölüm ${nextChapter})`}
+                  onPress={handleNextChapter}
+                  variant="primary"
+                />
+                <View style={styles.buttonSpacing} />
+              </>
+            )}
+
+            <Button
+              title="Yeniden Oyna"
+              onPress={handlePlayAgain}
+              variant="primary"
+            />
+            <View style={styles.buttonSpacing} />
+            <Button
+              title="🏠 Anasayfaya Dön"
+              onPress={handleGoHome}
+              variant="secondary"
+            />
           </View>
         </View>
-
-        <View style={styles.actions}>
-          {/* Macera modunda ve bölüm ilerlediyse "Sonraki Bölüme Geç" butonu */}
-          {adventureMode && chapterProgressed && nextChapter && (
-            <>
-              <Button
-                title={`➡️ Sonraki Bölüme Geç (Bölüm ${nextChapter})`}
-                onPress={handleNextChapter}
-                variant="primary"
-              />
-              <View style={styles.buttonSpacing} />
-            </>
-          )}
-          
-          <Button
-            title="Yeniden Oyna"
-            onPress={handlePlayAgain}
-            variant="primary"
-          />
-          <View style={styles.buttonSpacing} />
-          <Button
-            title="🏠 Anasayfaya Dön"
-            onPress={handleGoHome}
-            variant="secondary"
-          />
-        </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+      <AdBanner />
+    </>
   );
 };
 

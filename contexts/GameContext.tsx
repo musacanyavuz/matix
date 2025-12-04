@@ -23,6 +23,11 @@ import {
   statusCodes,
   User as GoogleUser,
 } from '@react-native-google-signin/google-signin';
+import { InterstitialAd, AdEventType, TestIds } from 'react-native-google-mobile-ads';
+
+const interstitial = InterstitialAd.createForAdRequest(TestIds.INTERSTITIAL, {
+  requestNonPersonalizedAdsOnly: true,
+});
 
 // Tip tanımlamaları
 export interface User {
@@ -115,7 +120,42 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // webClientId: 'YOUR_WEB_CLIENT_ID', // Firebase Console'dan alınmalı
       offlineAccess: true,
     });
+
+    // Interstitial Ad Event Listeners
+    const unsubscribeLoaded = interstitial.addAdEventListener(AdEventType.LOADED, () => {
+      // Ad loaded
+    });
+
+    const unsubscribeClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
+      // Ad closed, reload for next time
+      interstitial.load();
+    });
+
+    // Load initial ad
+    interstitial.load();
+
+    return () => {
+      unsubscribeLoaded();
+      unsubscribeClosed();
+    };
   }, []);
+
+  // Show Interstitial Ad when game finishes
+  useEffect(() => {
+    if (gameStatus === 'finished' && !isHost) { // Host might need to see results immediately or handle logic, but let's show to everyone
+      if (interstitial.loaded) {
+        interstitial.show();
+      } else {
+        interstitial.load(); // Try to load if not ready
+      }
+    }
+    // Also show for host
+    if (gameStatus === 'finished' && isHost) {
+      if (interstitial.loaded) {
+        interstitial.show();
+      }
+    }
+  }, [gameStatus]);
 
   // Oda dinleyicisi
   useEffect(() => {

@@ -6,7 +6,7 @@
 echo "🚀 Matix Backend Sunucusu Başlatılıyor..."
 
 # Backend klasörüne git
-cd "$(dirname "$0")/../backend" || exit
+cd "$(dirname "$0")/../server" || exit
 
 # Bağımlılıkları kontrol et ve yükle
 if [ ! -d "node_modules" ]; then

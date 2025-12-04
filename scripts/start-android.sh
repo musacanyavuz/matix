@@ -3,6 +3,9 @@
 # Android Expo Dev Server Başlatıcı (Port 8082)
 # Kullanım: ./scripts/start-android.sh
 
+# Add common paths for Node.js
+export PATH=$PATH:/usr/local/bin:/opt/homebrew/bin
+
 echo "🤖 Android Expo Dev Server Başlatılıyor (Port 8082)..."
 
 # Proje kök dizinine git
@@ -37,6 +40,7 @@ echo "   2. QR kodu tarayın veya terminalden 'a' tuşuna basın"
 echo ""
 
 # Expo'yu Android portunda başlat
-npx expo start --port 8082
+# Native modüller (Google Auth, AdMob) için development build başlat
+npx expo run:android
 
 
