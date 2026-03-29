@@ -21,15 +21,15 @@ echo "🔌 iOS Port: 8081"
 echo "🔌 Android Port: 8082"
 echo ""
 
-# Context dosyasındaki SOCKET_URL'i güncelle
-echo "⚙️  Socket URL güncelleniyor..."
-if [ -f "contexts/GameContext.tsx" ]; then
+# Config dosyasındaki API URL'ini güncelle
+echo "⚙️  API URL güncelleniyor..."
+if [ -f "constants/config.ts" ]; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "s|const SOCKET_URL = 'http://.*'|const SOCKET_URL = 'http://$IP_ADDRESS:3001'|" contexts/GameContext.tsx
+        sed -i '' "s|const DEV_DEFAULT_URL = 'http://[^']*'|const DEV_DEFAULT_URL = 'http://$IP_ADDRESS:3001'|" constants/config.ts
     else
-        sed -i "s|const SOCKET_URL = 'http://.*'|const SOCKET_URL = 'http://$IP_ADDRESS:3001'|" contexts/GameContext.tsx
+        sed -i "s|const DEV_DEFAULT_URL = 'http://[^']*'|const DEV_DEFAULT_URL = 'http://$IP_ADDRESS:3001'|" constants/config.ts
     fi
-    echo "✅ Socket URL güncellendi: http://$IP_ADDRESS:3001"
+    echo "✅ API URL güncellendi: http://$IP_ADDRESS:3001"
 fi
 
 # Backend sunucusunun çalışıp çalışmadığını kontrol et

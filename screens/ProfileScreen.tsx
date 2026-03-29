@@ -18,8 +18,7 @@ import { AvatarSelector } from '../components/AvatarSelector';
 import { AgeGroupSelector } from '../components/AgeGroupSelector';
 import { Button } from '../components/Button';
 import { AgeGroup } from '../constants/ageGroups';
-
-const SOCKET_URL = 'http://192.168.1.107:3001';
+import { API_BASE_URL } from '../constants/config';
 
 interface UserStats {
   totalScore: number;
@@ -65,7 +64,7 @@ export const ProfileScreen: React.FC = () => {
     
     setLoadingStats(true);
     try {
-      const response = await fetch(`${SOCKET_URL}/api/users/stats/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/stats/${userId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -103,7 +102,7 @@ export const ProfileScreen: React.FC = () => {
     try {
       // Kayıtlı kullanıcıysa API'ye gönder
       if (isAuthenticated && token) {
-        const response = await fetch(`${SOCKET_URL}/api/users/profile`, {
+        const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -133,7 +132,7 @@ export const ProfileScreen: React.FC = () => {
         
         if (!guestUserId) {
           try {
-            const createResponse = await fetch(`${SOCKET_URL}/api/users`, {
+            const createResponse = await fetch(`${API_BASE_URL}/api/users`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

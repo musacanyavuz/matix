@@ -24,7 +24,7 @@ interface RoomListProps {
   joining: boolean;
 }
 
-const SOCKET_URL = 'http://192.168.1.107:3001';
+import { API_BASE_URL } from '../constants/config';
 
 export const RoomList: React.FC<RoomListProps> = ({ onJoinRoom, joining }) => {
   const { token } = useGame();
@@ -50,7 +50,7 @@ export const RoomList: React.FC<RoomListProps> = ({ onJoinRoom, joining }) => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${SOCKET_URL}/api/rooms`, {
+      const response = await fetch(`${API_BASE_URL}/api/rooms`, {
         method: 'GET',
         headers,
       });

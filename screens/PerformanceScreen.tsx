@@ -11,7 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useGame } from '../contexts/GameContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
-const SOCKET_URL = 'http://192.168.1.107:3001';
+import { API_BASE_URL } from '../constants/config';
 const { width } = Dimensions.get('window');
 
 interface DailyPerformance {
@@ -58,7 +58,7 @@ export const PerformanceScreen: React.FC = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${SOCKET_URL}/api/users/stats/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/stats/${userId}`, {
         method: 'GET',
         headers,
       });

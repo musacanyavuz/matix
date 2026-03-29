@@ -6,23 +6,24 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "sdkVersion": "54.0.0",
+    "description": "İlkokul çağındaki çocuklar için eğlenceli matematik yarışması. Arkadaşlarınla veya botlarla yarış!",
     "splash": {
       "backgroundColor": "#4CAF50",
       "resizeMode": "contain"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.matix.app",
-      "deploymentTarget": "15.1"
+      "deploymentTarget": "15.1",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#4CAF50"
       },
       "package": "com.matix.app",
+      "versionCode": 2,
       "minSdkVersion": 26
     },
     "web": {},
@@ -30,12 +31,8 @@
       [
         "expo-build-properties",
         {
-          "android": {
-            "minSdkVersion": 26
-          },
-          "ios": {
-            "deploymentTarget": "15.1"
-          }
+          "android": { "minSdkVersion": 26 },
+          "ios": { "deploymentTarget": "15.1" }
         }
       ]
     ]

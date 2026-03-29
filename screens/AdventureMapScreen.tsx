@@ -13,7 +13,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useGame } from '../contexts/GameContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
-const SOCKET_URL = 'http://192.168.1.107:3001';
+import { API_BASE_URL } from '../constants/config';
 const { width } = Dimensions.get('window');
 const CHAPTERS_PER_ROW = 5; // Her satırda 5 bölüm
 const MAX_CHAPTERS = 50; // Toplam 50 bölüm
@@ -68,7 +68,7 @@ export const AdventureMapScreen: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`${SOCKET_URL}/api/users/adventure/progress`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/adventure/progress`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

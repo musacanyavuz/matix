@@ -17,7 +17,20 @@
     "ageGroup": "Yaş Grubu",
     "terms": "Kullanım şartlarını kabul ediyorum",
     "register": "Kayıt Ol",
-    "alreadyHaveAccount": "Zaten hesabınız var mı? Giriş yapın"
+    "alreadyHaveAccount": "Zaten hesabınız var mı? Giriş yapın",
+    "nicknameHint": "Örn: super_cocuk",
+    "nicknameRule": "Sadece harf, rakam ve alt çizgi kullanabilirsiniz",
+    "save": "Kaydediliyor...",
+    "registerSuccess": "Kayıt işlemi tamamlandı!",
+    "enterNickname": "Lütfen bir kullanıcı adı girin.",
+    "nicknameMinLength": "Kullanıcı adı en az 3 karakter olmalıdır.",
+    "nicknameMaxLength": "Kullanıcı adı en fazla 20 karakter olabilir.",
+    "nicknameFormat": "Kullanıcı adı sadece harf, rakam ve alt çizgi içerebilir.",
+    "passwordMinLength": "Şifre en az 6 karakter olmalıdır.",
+    "passwordMismatch": "Şifreler eşleşmiyor.",
+    "selectAgeGroup": "Lütfen bir yaş veya sınıf seçin.",
+    "alreadyHaveAccountAction": "Zaten hesabınız var mı?",
+    "loginAction": "Giriş yapın"
   },
   "login": {
     "title": "Giriş Yap",
@@ -25,7 +38,16 @@
     "password": "Şifre",
     "login": "Giriş Yap",
     "forgotPassword": "Şifremi Unuttum",
-    "noAccount": "Hesabınız yok mu? Kayıt olun"
+    "noAccount": "Hesabınız yok mu? Kayıt olun",
+    "username": "Kullanıcı Adı",
+    "usernamePlaceholder": "Kullanıcı adınızı girin",
+    "passwordPlaceholder": "••••••",
+    "loggingIn": "Giriş yapılıyor...",
+    "loginSuccess": "Giriş yapıldı!",
+    "enterUsername": "Lütfen kullanıcı adınızı girin.",
+    "enterPassword": "Lütfen şifrenizi girin.",
+    "noAccountAction": "Hesabınız yok mu?",
+    "registerAction": "Kayıt olun"
   },
   "room": {
     "title": "Odaya Katıl",

@@ -13,10 +13,12 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Button } from '../components/Button';
 import { useGame } from '../contexts/GameContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export const LoginScreen: React.FC = () => {
   const navigation = useNavigation();
   const { login } = useGame();
+  const { t } = useLanguage();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,12 +26,12 @@ export const LoginScreen: React.FC = () => {
   const handleLogin = async () => {
     // Validasyon
     if (!username.trim()) {
-      Alert.alert('Hata', 'Lütfen kullanıcı adınızı girin.');
+      Alert.alert(t('common.error'), t('login.enterUsername'));
       return;
     }
 
     if (!password) {
-      Alert.alert('Hata', 'Lütfen şifrenizi girin.');
+      Alert.alert(t('common.error'), t('login.enterPassword'));
       return;
     }
 
@@ -38,7 +40,7 @@ export const LoginScreen: React.FC = () => {
     try {
       await login(username.trim(), password);
 
-      Alert.alert('Başarılı', 'Giriş yapıldı!', [
+      Alert.alert(t('common.success'), t('login.loginSuccess'), [
         {
           text: 'Tamam',
           onPress: () => {
@@ -47,7 +49,7 @@ export const LoginScreen: React.FC = () => {
         },
       ]);
     } catch (error) {
-      Alert.alert('Hata', error instanceof Error ? error.message : 'Giriş başarısız');
+      Alert.alert(t('common.error'), error instanceof Error ? error.message : t('login.login'));
     } finally {
       setLoading(false);
     }
@@ -60,23 +62,23 @@ export const LoginScreen: React.FC = () => {
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Giriş Yap</Text>
+          <Text style={styles.title}>{t('login.title')}</Text>
           <TouchableOpacity
             onPress={() => (navigation as any).goBack()}
             style={styles.backButton}
           >
-            <Text style={styles.backButtonText}>← Geri</Text>
+            <Text style={styles.backButtonText}>← {t('common.back')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.form}>
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Kullanıcı Adı</Text>
+            <Text style={styles.label}>{t('login.username')}</Text>
             <TextInput
               style={styles.input}
               value={username}
               onChangeText={setUsername}
-              placeholder="Kullanıcı adınızı girin"
+              placeholder={t('login.usernamePlaceholder')}
               placeholderTextColor="#999"
               autoCapitalize="none"
               autoCorrect={false}
@@ -84,19 +86,19 @@ export const LoginScreen: React.FC = () => {
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Şifre</Text>
+            <Text style={styles.label}>{t('login.password')}</Text>
             <TextInput
               style={styles.input}
               value={password}
               onChangeText={setPassword}
-              placeholder="••••••"
+              placeholder={t('login.passwordPlaceholder')}
               placeholderTextColor="#999"
               secureTextEntry
             />
           </View>
 
           <Button
-            title={loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+            title={loading ? t('login.loggingIn') : t('login.login')}
             onPress={handleLogin}
             variant="primary"
             disabled={loading}
@@ -107,7 +109,7 @@ export const LoginScreen: React.FC = () => {
             onPress={() => (navigation as any).navigate('Register')}
           >
             <Text style={styles.registerLinkText}>
-              Hesabınız yok mu? <Text style={styles.registerLinkBold}>Kayıt olun</Text>
+              {t('login.noAccountAction')} <Text style={styles.registerLinkBold}>{t('login.registerAction')}</Text>
             </Text>
           </TouchableOpacity>
         </View>

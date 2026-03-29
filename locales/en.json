@@ -17,7 +17,20 @@
     "ageGroup": "Age Group",
     "terms": "I accept the terms of use",
     "register": "Register",
-    "alreadyHaveAccount": "Already have an account? Login"
+    "alreadyHaveAccount": "Already have an account? Login",
+    "nicknameHint": "e.g. super_kid",
+    "nicknameRule": "Only letters, numbers and underscore allowed",
+    "save": "Saving...",
+    "registerSuccess": "Registration complete!",
+    "enterNickname": "Please enter a username.",
+    "nicknameMinLength": "Username must be at least 3 characters.",
+    "nicknameMaxLength": "Username can be at most 20 characters.",
+    "nicknameFormat": "Username can only contain letters, numbers and underscore.",
+    "passwordMinLength": "Password must be at least 6 characters.",
+    "passwordMismatch": "Passwords do not match.",
+    "selectAgeGroup": "Please select an age or grade.",
+    "alreadyHaveAccountAction": "Already have an account?",
+    "loginAction": "Login"
   },
   "login": {
     "title": "Login",
@@ -25,7 +38,16 @@
     "password": "Password",
     "login": "Login",
     "forgotPassword": "Forgot Password",
-    "noAccount": "Don't have an account? Register"
+    "noAccount": "Don't have an account? Register",
+    "username": "Username",
+    "usernamePlaceholder": "Enter your username",
+    "passwordPlaceholder": "••••••",
+    "loggingIn": "Logging in...",
+    "loginSuccess": "Login successful!",
+    "enterUsername": "Please enter your username.",
+    "enterPassword": "Please enter your password.",
+    "noAccountAction": "Don't have an account?",
+    "registerAction": "Register"
   },
   "room": {
     "title": "Join Room",

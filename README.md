@@ -4,47 +4,44 @@
 
 ## 📱 Özellikler
 
+- ✅ Kayıt/Giriş ve misafir modu
 - ✅ Profil oluşturma (nickname + hayvan avatar seçimi)
 - ✅ **Yaş/Sınıf seçimi** (4-5-6 yaş, 1-2-3-4. sınıf)
 - ✅ **Yaş grubuna göre soru zorluk seviyesi**
 - ✅ Gerçek zamanlı multiplayer oyun (Socket.io)
+- ✅ Arkadaş ekleme ve oyun daveti
+- ✅ Macera modu (botlarla bölüm geçme)
 - ✅ Oda oluşturma ve katılma sistemi
 - ✅ 10 soruluk matematik yarışması (toplama, çıkarma, çarpma, bölme)
 - ✅ Anlık skor takibi
-- ✅ Çocuk dostu, renkli ve eğlenceli arayüz
-- ✅ Sonuç ekranı ve kazanan belirleme
+- ✅ Liderlik tablosu ve performans istatistikleri
+- ✅ Türkçe / İngilizce dil desteği
 
 ## 🛠️ Teknolojiler
 
-- **React Native** (Expo)
-- **Socket.io** (WebSocket bağlantısı)
-- **React Context API** (State yönetimi)
-- **React Navigation** (Navigasyon)
-- **AsyncStorage** (Yerel veri depolama)
+- **Mobil:** React Native (Expo), Socket.io Client
+- **Backend:** Express.js, Socket.io, Firebase Firestore
+- **Kimlik:** JWT, bcrypt
+- **State:** React Context API, AsyncStorage
 
 ## 📦 Kurulum
 
 ### Hızlı Başlangıç (Önerilen)
 
 ```bash
-# 1. Projeyi kur
+# 1. Projeyi kur (mobil + backend)
 ./scripts/setup.sh
 
-# 2. Socket.io sunucusunu başlat (ayrı terminal)
+# 2. Backend yapılandırması
+cp backend/.env.example backend/.env
+# backend/.env dosyasında Firebase ayarlarını yapın
+
+# 3. Backend sunucusunu başlat (ayrı terminal)
 ./scripts/start-server.sh
 
-# 3. Test seçenekleri:
-
-# Tek cihaz için:
-./scripts/test-android.sh    # Android (Port 8081)
-./scripts/test-ios.sh         # iOS (Port 8081)
-
-# İki cihaz aynı anda (farklı portlar):
-./scripts/start-both.sh       # iOS (8081) + Android (8082) aynı anda
-
-# Veya manuel olarak iki terminal:
-# Terminal 1: ./scripts/start-ios.sh      (Port 8081)
-# Terminal 2: ./scripts/start-android.sh  (Port 8082)
+# 4. Test seçenekleri:
+./scripts/test-android.sh    # Android
+./scripts/test-ios.sh        # iOS (fiziksel cihaz)
 ```
 
 ### Manuel Kurulum
@@ -53,133 +50,156 @@
 
 ```bash
 npm install
-cd server && npm install && cd ..
+cd backend && npm install && cd ..
 ```
 
-#### 2. Socket.io Sunucusunu Başlat
+#### 2. Backend Yapılandırması
 
 ```bash
-cd server
+cp backend/.env.example backend/.env
+```
+
+`backend/.env` dosyasında:
+- `FIREBASE_PROJECT_ID` - Firebase proje ID
+- `FIREBASE_SERVICE_ACCOUNT_PATH` veya `FIREBASE_SERVICE_ACCOUNT_KEY` - Service Account
+- `JWT_SECRET` - Production için mutlaka değiştirin!
+
+#### 3. Backend Sunucusunu Başlat
+
+```bash
+cd backend
+npm run dev
+```
+
+Sunucu varsayılan olarak `http://localhost:3001` adresinde çalışır.
+
+#### 4. Mobil Uygulamayı Başlat
+
+```bash
 npm start
 ```
 
-Sunucu varsayılan olarak `http://localhost:3001` adresinde çalışacaktır.
+- **Simülatör/Emülatör:** Varsayılan `localhost:3001` kullanılır
+- **Fiziksel cihaz:** Test scriptleri (`test-android.sh`, `test-ios.sh`) IP adresini otomatik günceller
 
-**Not:** Test scriptleri otomatik olarak IP adresinizi bulur ve Socket URL'ini günceller.
+## 🚀 Production / Store Yayını
 
-#### 3. Mobil Uygulamayı Başlat
+### API URL Yapılandırması
+
+Production build için `EXPO_PUBLIC_API_URL` ortam değişkenini ayarlayın:
 
 ```bash
-npm start
+# EAS Build örneği
+export EXPO_PUBLIC_API_URL=https://api.matix.app
+eas build --platform android
 ```
 
-Ardından:
-- iOS için: `i` tuşuna basın veya Expo Go uygulamasından QR kodu tarayın
-- Android için: `a` tuşuna basın veya Expo Go uygulamasından QR kodu tarayın
+Veya `.env` dosyasında:
+```
+EXPO_PUBLIC_API_URL=https://api.matix.app
+```
 
-## 🎯 Kullanım
+### App Icon ve Splash
 
-1. **Profil Oluştur**: İlk açılışta nickname, avatar ve **yaş/sınıf** seçin
-2. **Oda Oluştur veya Katıl**: Yeni bir oda oluşturun veya mevcut bir odaya kod ile katılın
-3. **Oyuncu Bekle**: İkinci oyuncu katılana kadar bekleyin
-4. **Oyna**: Seçilen yaş grubuna uygun 10 matematik sorusunu hızlıca cevaplayın
-5. **Kazanan**: En yüksek skora sahip oyuncu kazanır!
+Store'a gönderirken özel ikon eklemek için `assets/` klasörüne bakın. Detaylar: `assets/README.md`
 
-### Yaş Grupları ve Soru Zorlukları
+### Backend Deployment
 
-- **4 Yaş**: Sadece toplama (1-5 arası)
-- **5 Yaş**: Toplama ve çıkarma (1-10 arası)
-- **6 Yaş**: Toplama ve çıkarma (1-15 arası)
-- **1. Sınıf**: Toplama ve çıkarma (1-20 arası)
-- **2. Sınıf**: Toplama, çıkarma ve çarpma (1-50 arası)
-- **3. Sınıf**: Toplama, çıkarma ve çarpma (1-100 arası)
-- **4. Sınıf**: Tüm işlemler (toplama, çıkarma, çarpma, bölme)
+Backend'i (Express + Socket.io + Firebase) bir cloud servise deploy edin (Railway, Render, Google Cloud Run vb.). CORS ayarlarını `backend/.env` ile yapılandırın.
+
+### Android Yayın Konfigürasyonu (Play Store)
+
+Bu repo Android yayın için EAS profilleriyle hazırlandı:
+
+- `preview` -> APK (`internal` dağıtım)
+- `production` -> AAB (`internal` track submit)
+
+#### İlk Kurulum
+
+```bash
+# Expo hesabına giriş
+npx eas login
+
+# Build konfigürasyonu
+npx eas build:configure
+```
+
+#### Environment
+
+```bash
+cp .env.example .env
+# .env içinde EXPO_PUBLIC_API_URL değerini production backend URL'iniz yapın
+```
+
+#### Android Build
+
+```bash
+# İç test APK (QA)
+npm run build:android:preview
+
+# Play Store için AAB
+npm run build:android:production
+```
+
+#### Play Store'a Gönderim
+
+```bash
+# Google Play Console internal track
+npm run submit:android:production
+```
+
+> Not: İlk submit'te EAS sizden Google Play Service Account JSON veya Play Console bağlantısı ister.
+> `app.json` içindeki `android.versionCode` ve EAS `autoIncrement` birlikte sürüm yönetimi yapar.
 
 ## 📁 Proje Yapısı
 
 ```
 matix/
-├── App.tsx                 # Ana uygulama ve navigasyon
+├── App.tsx
 ├── contexts/
-│   └── GameContext.tsx     # Oyun state yönetimi ve Socket.io
+│   ├── GameContext.tsx      # Oyun + Auth + Socket
+│   └── LanguageContext.tsx
 ├── screens/
-│   ├── ProfileScreen.tsx   # Profil oluşturma ekranı
-│   ├── RoomScreen.tsx      # Oda oluşturma/katılma ekranı
-│   ├── GameScreen.tsx      # Oyun ekranı
-│   └── ResultScreen.tsx    # Sonuç ekranı
-├── components/
-│   ├── AvatarSelector.tsx      # Avatar seçim bileşeni
-│   ├── AgeGroupSelector.tsx    # Yaş/sınıf seçim bileşeni
-│   ├── Button.tsx             # Buton bileşeni
-│   ├── AnswerButton.tsx       # Cevap butonu bileşeni
-│   └── PlayerCard.tsx         # Oyuncu kartı bileşeni
+│   ├── WelcomeScreen, LoginScreen, RegisterScreen
+│   ├── HomeScreen, ProfileScreen, RoomScreen
+│   ├── GameScreen, ResultScreen
+│   ├── LeaderboardScreen, PerformanceScreen
+│   ├── AdventureMapScreen, FriendListScreen...
+│   └── ...
 ├── constants/
-│   ├── avatars.ts          # Avatar seçenekleri
-│   └── ageGroups.ts        # Yaş/sınıf grupları
-├── utils/
-│   └── gameLogic.ts        # Oyun mantığı fonksiyonları
-├── scripts/
-│   ├── setup.sh            # Proje kurulum scripti
-│   ├── start-server.sh     # Sunucu başlatma scripti
-│   ├── test-android.sh     # Android test scripti
-│   └── test-ios.sh         # iOS test scripti
-└── server/
-    ├── server.js           # Socket.io sunucusu
-    └── package.json        # Sunucu bağımlılıkları
+│   ├── config.ts            # API_BASE_URL (merkezi)
+│   ├── avatars.ts, ageGroups.ts
+│   └── ...
+├── locales/                 # tr.json, en.json
+└── backend/
+    ├── src/
+    │   ├── server.js        # Express + Socket.io
+    │   ├── routes/          # Auth, Users, Rooms, Friends
+    │   ├── services/        # Firebase Firestore
+    │   └── socket/          # Oyun mantığı
+    ├── prisma/              # Schema (Firebase kullanılıyor)
+    └── .env.example
 ```
-
-## 🎨 Özellikler Detayı
-
-### Profil Sistemi
-- Kullanıcılar sadece bir kez profil oluşturur
-- Profil bilgileri AsyncStorage'da saklanır
-- 12 farklı hayvan avatar seçeneği
-
-### Multiplayer Sistemi
-- WebSocket ile gerçek zamanlı bağlantı
-- 6 karakterlik rastgele oda kodları
-- Maksimum 2 oyuncu
-
-### Oyun Mekaniği
-- Her turda rastgele matematik sorusu (toplama, çıkarma, çarpma, bölme)
-- 6 cevap seçeneği (1 doğru + 5 yanlış, karışık sıralı)
-- İlk doğru cevap veren oyuncu +1 skor alır
-- 10 soru sonunda oyun biter
 
 ## 🔧 Geliştirme
 
-### Socket.io Sunucu Yapılandırması
+### API URL Değişikliği
 
-Sunucu portunu değiştirmek için `server/server.js` dosyasındaki `PORT` değişkenini düzenleyin:
+- **constants/config.ts** - Merkezi yapılandırma
+- Development: `localhost` veya test scriptleri ile IP
+- Production: `EXPO_PUBLIC_API_URL` env variable
 
-```javascript
-const PORT = process.env.PORT || 3001;
-```
+### Backend Port
 
-### Mobil Uygulama Yapılandırması
-
-Socket.io sunucu URL'ini değiştirmek için `contexts/GameContext.tsx` dosyasını düzenleyin:
-
-```typescript
-const SOCKET_URL = 'http://localhost:3001';
+```bash
+# backend/.env
+PORT=3001
 ```
 
 ## 📝 Lisans
 
 Bu proje eğitim amaçlı oluşturulmuştur.
 
-## 🤝 Katkıda Bulunma
-
-1. Fork yapın
-2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Commit yapın (`git commit -m 'Add some amazing feature'`)
-4. Push yapın (`git push origin feature/amazing-feature`)
-5. Pull Request açın
-
-## 📞 Destek
-
-Sorularınız için issue açabilirsiniz.
-
 ---
 
-**Not:** Bu uygulama geliştirme aşamasındadır. Production kullanımı için ek güvenlik ve optimizasyon önlemleri alınmalıdır.
+**Not:** Production öncesi `JWT_SECRET` mutlaka güçlü bir değerle değiştirilmelidir.

@@ -45,18 +45,17 @@ fi
 echo "📱 IP Adresi: $IP_ADDRESS"
 echo ""
 
-# Context dosyasındaki SOCKET_URL'i güncelle
-echo "⚙️  Socket URL güncelleniyor..."
-if [ -f "contexts/GameContext.tsx" ]; then
-    # macOS için sed komutu
+# Config dosyasındaki API URL'ini güncelle (fiziksel cihaz için)
+echo "⚙️  API URL güncelleniyor..."
+if [ -f "constants/config.ts" ]; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "s|const SOCKET_URL = 'http://.*'|const SOCKET_URL = 'http://$IP_ADDRESS:3001'|" contexts/GameContext.tsx
+        sed -i '' "s|const DEV_DEFAULT_URL = 'http://[^']*'|const DEV_DEFAULT_URL = 'http://$IP_ADDRESS:3001'|" constants/config.ts
     else
-        sed -i "s|const SOCKET_URL = 'http://.*'|const SOCKET_URL = 'http://$IP_ADDRESS:3001'|" contexts/GameContext.tsx
+        sed -i "s|const DEV_DEFAULT_URL = 'http://[^']*'|const DEV_DEFAULT_URL = 'http://$IP_ADDRESS:3001'|" constants/config.ts
     fi
-    echo "✅ Socket URL güncellendi: http://$IP_ADDRESS:3001"
+    echo "✅ API URL güncellendi: http://$IP_ADDRESS:3001"
 else
-    echo "⚠️  contexts/GameContext.tsx dosyası bulunamadı!"
+    echo "⚠️  constants/config.ts dosyası bulunamadı!"
 fi
 
 echo ""

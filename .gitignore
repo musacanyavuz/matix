@@ -1,6 +1,9 @@
 node_modules/
 .expo/
 .expo-shared/
+.env
+.env.local
+.env.*.local
 dist/
 npm-debug.*
 *.jks
@@ -14,3 +17,6 @@ keystore.properties
 web-build/
 .DS_Store
 backend/matix-573eb-firebase-adminsdk-fbsvc-e2949ac1c0.json
+backend/firebase-service-account.json
+backend/*-firebase-adminsdk-*.json
+play-service-account.json

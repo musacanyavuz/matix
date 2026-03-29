@@ -3,9 +3,7 @@ import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { io, Socket } from 'socket.io-client';
 import { AgeGroup } from '../constants/ageGroups';
-
-// Socket.io sunucu URL'i - gerçek uygulamada kendi sunucunuzun URL'ini kullanın
-const SOCKET_URL = 'http://192.168.1.107:3001';
+import { API_BASE_URL } from '../constants/config';
 
 // Tip tanımlamaları
 export interface User {
@@ -118,7 +116,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
    */
   const verifyAndLoadUser = async (tokenToVerify: string): Promise<boolean> => {
     try {
-      const response = await fetch(`${SOCKET_URL}/api/auth/me`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
         headers: {
           'Authorization': `Bearer ${tokenToVerify}`,
         },
@@ -234,7 +232,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Socket bağlantısını kur (user veya token değiştiğinde yeniden bağlan)
   useEffect(() => {
     if (user) {
-      const newSocket = io(SOCKET_URL, {
+      const newSocket = io(API_BASE_URL, {
         transports: ['websocket', 'polling'], // WebSocket başarısız olursa polling'e geç
         reconnection: true,
         reconnectionDelay: 1000,
@@ -287,7 +285,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Socket bağlantı durumu
       newSocket.on('connect_error', (error) => {
         console.error('❌ Socket bağlantı hatası:', error);
-        console.error('❌ Socket URL:', SOCKET_URL);
+        console.error('❌ Bağlantı hatası, API URL:', API_BASE_URL);
         // Alert'i kaldırdık, sadece log
         // alert('Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin.');
       });
@@ -507,7 +505,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Login fonksiyonu
   const login = async (username: string, password: string) => {
     try {
-      const response = await fetch(`${SOCKET_URL}/api/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -545,7 +543,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Register fonksiyonu
   const register = async (password: string, nickname: string, avatar: string, ageGroupData: AgeGroup) => {
     try {
-      const response = await fetch(`${SOCKET_URL}/api/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -593,7 +591,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!guestUserId && user) {
       try {
         console.log('Misafir kullanıcı için backend kullanıcısı oluşturuluyor...');
-        const createResponse = await fetch(`${SOCKET_URL}/api/users`, {
+        const createResponse = await fetch(`${API_BASE_URL}/api/users`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -639,7 +637,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     try {
-      const response = await fetch(`${SOCKET_URL}/api/auth/convert-guest`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/convert-guest`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -724,7 +722,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Zorluk seviyesi validasyonu (-1, 0, 1)
       const validDifficultyLevel = [-1, 0, 1].includes(difficultyLevel) ? difficultyLevel : 0;
 
-      const response = await fetch(`${SOCKET_URL}/api/rooms`, {
+      const response = await fetch(`${API_BASE_URL}/api/rooms`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -807,8 +805,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      console.log('📡 API çağrısı yapılıyor:', `${SOCKET_URL}/api/rooms/join`);
-      const response = await fetch(`${SOCKET_URL}/api/rooms/join`, {
+      console.log('📡 API çağrısı yapılıyor:', `${API_BASE_URL}/api/rooms/join`);
+      const response = await fetch(`${API_BASE_URL}/api/rooms/join`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -976,7 +974,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Friend API functions
   const sendFriendRequest = async (receiverNickname: string) => {
-    const response = await makeAuthenticatedRequest(`${SOCKET_URL}/api/friends/request`, {
+    const response = await makeAuthenticatedRequest(`${API_BASE_URL}/api/friends/request`, {
       method: 'POST',
       body: JSON.stringify({ receiverNickname }),
     });
@@ -990,7 +988,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const acceptFriendRequest = async (friendshipId: string) => {
-    const response = await makeAuthenticatedRequest(`${SOCKET_URL}/api/friends/accept`, {
+    const response = await makeAuthenticatedRequest(`${API_BASE_URL}/api/friends/accept`, {
       method: 'POST',
       body: JSON.stringify({ friendshipId }),
     });
@@ -1004,7 +1002,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const rejectFriendRequest = async (friendshipId: string) => {
-    const response = await makeAuthenticatedRequest(`${SOCKET_URL}/api/friends/reject`, {
+    const response = await makeAuthenticatedRequest(`${API_BASE_URL}/api/friends/reject`, {
       method: 'POST',
       body: JSON.stringify({ friendshipId }),
     });
@@ -1018,7 +1016,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const getFriends = async () => {
-    const response = await makeAuthenticatedRequest(`${SOCKET_URL}/api/friends`, {
+    const response = await makeAuthenticatedRequest(`${API_BASE_URL}/api/friends`, {
       method: 'GET',
     });
 
@@ -1032,7 +1030,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const getPendingRequests = async () => {
-    const response = await makeAuthenticatedRequest(`${SOCKET_URL}/api/friends/pending`, {
+    const response = await makeAuthenticatedRequest(`${API_BASE_URL}/api/friends/pending`, {
       method: 'GET',
     });
 
@@ -1046,7 +1044,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const searchUsers = async (query: string) => {
-    const response = await makeAuthenticatedRequest(`${SOCKET_URL}/api/friends/search?q=${encodeURIComponent(query)}`, {
+    const response = await makeAuthenticatedRequest(`${API_BASE_URL}/api/friends/search?q=${encodeURIComponent(query)}`, {
       method: 'GET',
     });
 
@@ -1060,7 +1058,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const removeFriend = async (friendId: string) => {
-    const response = await makeAuthenticatedRequest(`${SOCKET_URL}/api/friends/${friendId}`, {
+    const response = await makeAuthenticatedRequest(`${API_BASE_URL}/api/friends/${friendId}`, {
       method: 'DELETE',
     });
 
@@ -1097,7 +1095,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const getPendingRoomInvitations = async () => {
-    const response = await makeAuthenticatedRequest(`${SOCKET_URL}/api/rooms/pending-invitations`, {
+    const response = await makeAuthenticatedRequest(`${API_BASE_URL}/api/rooms/pending-invitations`, {
       method: 'GET',
     });
 

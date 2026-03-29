@@ -16,10 +16,12 @@ import { AgeGroupSelector } from '../components/AgeGroupSelector';
 import { AgeGroup } from '../constants/ageGroups';
 import { Button } from '../components/Button';
 import { useGame } from '../contexts/GameContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export const RegisterScreen: React.FC = () => {
   const navigation = useNavigation();
   const { register } = useGame();
+  const { t } = useLanguage();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [nickname, setNickname] = useState('');
@@ -30,39 +32,38 @@ export const RegisterScreen: React.FC = () => {
   const handleRegister = async () => {
     // Validasyon
     if (!nickname.trim()) {
-      Alert.alert('Hata', 'Lütfen bir kullanıcı adı girin.');
+      Alert.alert(t('common.error'), t('register.enterNickname'));
       return;
     }
 
     if (nickname.length < 3) {
-      Alert.alert('Hata', 'Kullanıcı adı en az 3 karakter olmalıdır.');
+      Alert.alert(t('common.error'), t('register.nicknameMinLength'));
       return;
     }
 
     if (nickname.length > 20) {
-      Alert.alert('Hata', 'Kullanıcı adı en fazla 20 karakter olabilir.');
+      Alert.alert(t('common.error'), t('register.nicknameMaxLength'));
       return;
     }
 
-    // Kullanıcı adı format kontrolü
     const nicknameRegex = /^[a-zA-Z0-9_ğüşıöçĞÜŞİÖÇ]+$/;
     if (!nicknameRegex.test(nickname.trim())) {
-      Alert.alert('Hata', 'Kullanıcı adı sadece harf, rakam ve alt çizgi içerebilir.');
+      Alert.alert(t('common.error'), t('register.nicknameFormat'));
       return;
     }
 
     if (!password || password.length < 6) {
-      Alert.alert('Hata', 'Şifre en az 6 karakter olmalıdır.');
+      Alert.alert(t('common.error'), t('register.passwordMinLength'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Hata', 'Şifreler eşleşmiyor.');
+      Alert.alert(t('common.error'), t('register.passwordMismatch'));
       return;
     }
 
     if (!selectedAgeGroup) {
-      Alert.alert('Hata', 'Lütfen bir yaş veya sınıf seçin.');
+      Alert.alert(t('common.error'), t('register.selectAgeGroup'));
       return;
     }
 
@@ -76,7 +77,7 @@ export const RegisterScreen: React.FC = () => {
         selectedAgeGroup
       );
 
-      Alert.alert('Başarılı', 'Kayıt işlemi tamamlandı!', [
+      Alert.alert(t('common.success'), t('register.registerSuccess'), [
         {
           text: 'Tamam',
           onPress: () => {
@@ -85,7 +86,7 @@ export const RegisterScreen: React.FC = () => {
         },
       ]);
     } catch (error) {
-      Alert.alert('Hata', error instanceof Error ? error.message : 'Kayıt başarısız');
+      Alert.alert(t('common.error'), error instanceof Error ? error.message : t('register.register'));
     } finally {
       setLoading(false);
     }
@@ -98,33 +99,33 @@ export const RegisterScreen: React.FC = () => {
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Kayıt Ol</Text>
+          <Text style={styles.title}>{t('register.title')}</Text>
           <TouchableOpacity
             onPress={() => (navigation as any).goBack()}
             style={styles.backButton}
           >
-            <Text style={styles.backButtonText}>← Geri</Text>
+            <Text style={styles.backButtonText}>← {t('common.back')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.form}>
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Kullanıcı Adı (Min. 3, Max. 20 karakter)</Text>
+            <Text style={styles.label}>{t('register.nickname')} (Min. 3, Max. 20)</Text>
             <TextInput
               style={styles.input}
               value={nickname}
               onChangeText={setNickname}
-              placeholder="Örn: super_cocuk"
+              placeholder={t('register.nicknameHint')}
               placeholderTextColor="#999"
               maxLength={20}
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <Text style={styles.hintText}>Sadece harf, rakam ve alt çizgi kullanabilirsiniz</Text>
+            <Text style={styles.hintText}>{t('register.nicknameRule')}</Text>
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Şifre (Min. 6 karakter)</Text>
+            <Text style={styles.label}>{t('register.password')} (Min. 6)</Text>
             <TextInput
               style={styles.input}
               value={password}
@@ -136,7 +137,7 @@ export const RegisterScreen: React.FC = () => {
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Şifre Tekrar</Text>
+            <Text style={styles.label}>{t('register.confirmPassword')}</Text>
             <TextInput
               style={styles.input}
               value={confirmPassword}
@@ -158,7 +159,7 @@ export const RegisterScreen: React.FC = () => {
           />
 
           <Button
-            title={loading ? 'Kaydediliyor...' : 'Kayıt Ol'}
+            title={loading ? t('register.save') : t('register.register')}
             onPress={handleRegister}
             variant="primary"
             disabled={loading}

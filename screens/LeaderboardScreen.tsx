@@ -11,7 +11,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useGame } from '../contexts/GameContext';
 
-const SOCKET_URL = 'http://192.168.1.107:3001';
+import { API_BASE_URL } from '../constants/config';
 
 interface LeaderboardEntry {
   id: string;
@@ -43,7 +43,7 @@ export const LeaderboardScreen: React.FC = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch(`${SOCKET_URL}/api/users/leaderboard?limit=50`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/leaderboard?limit=50`, {
         method: 'GET',
         headers,
       });

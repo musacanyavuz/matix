@@ -14,7 +14,7 @@ import { useGame } from '../contexts/GameContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from '../components/Button';
 
-const SOCKET_URL = 'http://192.168.1.107:3001';
+import { API_BASE_URL } from '../constants/config';
 
 interface UserStats {
   totalScore: number;
@@ -79,7 +79,7 @@ export const HomeScreen: React.FC = () => {
 
     try {
       // İstatistikleri al
-      const statsResponse = await fetch(`${SOCKET_URL}/api/users/stats/${userId}`, {
+      const statsResponse = await fetch(`${API_BASE_URL}/api/users/stats/${userId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -95,7 +95,7 @@ export const HomeScreen: React.FC = () => {
       }
 
       // Macera ilerlemesini al
-      const progressResponse = await fetch(`${SOCKET_URL}/api/users/adventure/progress`, {
+      const progressResponse = await fetch(`${API_BASE_URL}/api/users/adventure/progress`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -167,7 +167,7 @@ export const HomeScreen: React.FC = () => {
       // roomId context'ten al (roomCode olarak geliyor)
       if (roomId) {
         // Backend'de roomCode'dan roomId'yi almak için API çağrısı yap
-        const response = await fetch(`${SOCKET_URL}/api/rooms/${roomId}/participants`, {
+        const response = await fetch(`${API_BASE_URL}/api/rooms/${roomId}/participants`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
